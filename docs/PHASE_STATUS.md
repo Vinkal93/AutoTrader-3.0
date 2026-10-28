@@ -108,10 +108,38 @@ The platform has reached full structural completion for **Phase 4: Automated Str
 
 ---
 
-## 7. Scope Boundary & Phase 5 Readiness
+## 7. Phase 5 Completion Scorecard: Execution and Risk Engine
+
+The platform has reached full structural completion for **Phase 5: Execution and Risk Engine**.
+
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Broker Order Operations** | Full submission, modification, cancellation, and order querying implemented | **COMPLETED** | [`base.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/broker/base.py), [`kotak_neo.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/broker/kotak_neo.py) |
+| **13-State Deterministic State Machine** | 13 lifecycle states with transition matrix, terminal state guards, and cancel race resolution | **COMPLETED** | [`order_state_machine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/order_state_machine.py) |
+| **Idempotency & Concurrency Mutex** | Unique client correlation keys (`idempotency_key`), DB unique constraints, and `EXECUTION_MUTEX` | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py) |
+| **Pre-Flight Risk Validation** | Tick alignment (0.05), lot alignment (25), margin check, market open 09:15-15:30 IST | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py), [`execution-risk-engine.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/execution-risk-engine.test.ts) |
+| **Target & SL-L Math** | Target calculated as confirmed avg entry + configured premium move (₹1.00), SL at -₹8.00 | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py) |
+| **Single-Authority Exit Manager** | No independent unlinked OCO assumptions; Cancel-Confirm-Reconcile sequence before target placement | **COMPLETED** | [`ORDER_LIFECYCLE.md`](file:///d:/Coding/Auto%20Trader%203.0/docs/ORDER_LIFECYCLE.md), [`FAILURE_MODES.md`](file:///d:/Coding/Auto%20Trader%203.0/docs/FAILURE_MODES.md) |
+| **Protective Order Failure Recovery** | If SL-L order fails, immediately transitions engine to `RISK_LOCKED` and executes emergency square-off | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py) |
+| **Overselling / Short Position Guard** | Prohibits selling quantity greater than confirmed open long holdings; prevents naked option shorting | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py) |
+| **Circuit Breakers & Time-Based Exit** | Max daily loss breach trips `RISK_LOCKED`; time-based exit at 15:15:00 IST flattens intraday options | **COMPLETED** | [`engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/trading_worker/worker/engine.py), [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py) |
+| **Reconciliation on Restart** | Compares broker orderbook and positions with local DB records on worker bootstrap; updates state | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py) |
+| **18 Failure Modes & Runbooks** | Comprehensive catalog of 18 analyzed network, API, execution, and infrastructure failure modes | **COMPLETED** | [`FAILURE_MODES.md`](file:///d:/Coding/Auto%20Trader%203.0/docs/FAILURE_MODES.md) |
+| **Four-Part LIVE Safety Lock** | LIVE execution blocked without explicit consent secret, active session, static IP, and approved risk | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py), [`system.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/system.py) |
+| **SL-L Non-Guarantee Disclaimer** | Prominently warns users and UI that SL-L orders do not guarantee execution in fast gap-down markets | **COMPLETED** | [`TradeTicket.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TradeTicket.tsx), [`ORDER_LIFECYCLE.md`](file:///d:/Coding/Auto%20Trader%203.0/docs/ORDER_LIFECYCLE.md) |
+
+---
+
+## 8. Safety Gate: Real-Money Trading Authorization
 
 > [!CAUTION]
-> **PHASE 4 HARD SAFETY LOCK:**
-> In accordance with user directives, work stops after Phase 4.
-> Live broker order execution (`place_order`, `modify_order`, `cancel_order`) is deferred to **Phase 5 (Order Execution & Risk Engine)**.
-> All strategy evaluation signals operate exclusively in advisory / paper simulation mode.
+> **LIVE TRADING SAFETY GATE ACTIVE:**
+> As mandated by Phase 5 requirements, real-money live order submission is **NOT automatically enabled**.
+> All order submissions default strictly to **PAPER simulation execution**.
+> Activating LIVE execution requires:
+> 1. Explicit operator consent token submitted to `/api/v1/system/live-authorization`.
+> 2. Verified active broker connection with Kotak Neo (`BrokerConnectionState.CONNECTED`).
+> 3. Static IP compliance verification (`static_ip_compliant == true`).
+> 4. Non-zero approved risk limits (`maxDailyLoss`, `maxRiskPerTrade`, `minTradingFunds`).
+> 
+> In accordance with instructions, the platform halts after Phase 5.

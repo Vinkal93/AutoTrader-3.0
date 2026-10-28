@@ -10,8 +10,13 @@ from app.models.enums import SystemEventSeverity, TradingMode
 from app.routers.deps import paginated_response, success_response
 from app.schemas.common import ApiResponse, PaginatedResponse
 from app.schemas.dashboard import SystemEvent
+from app.schemas.execution_engine import FailureModeItem, LiveAuthorizationStatus
 from app.schemas.health import ModeSwitchRequest, SystemStatusResponse
 from app.services.auth_service import CurrentUser, get_current_user
+from app.services.execution_engine import (
+    ExecutionEngine,
+    LIVE_AUTHORIZATION_REGISTRY,
+)
 from app.services.state_service import StateService
 
 router = APIRouter(prefix="/api/v1/system", tags=["System"])
@@ -129,3 +134,60 @@ async def get_system_events(
         request=request,
         data_source="DATABASE",
     )
+
+
+@router.get("/failure-modes", response_model=ApiResponse[List[FailureModeItem]])
+async def get_failure_modes(
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[List[FailureModeItem]]:
+    """Returns complete catalog of 18 analyzed failure modes and recovery procedures."""
+    items = ExecutionEngine.get_failure_modes_catalog()
+    return success_response(items, request=request, data_source="STATIC")
+
+
+@router.get("/live-authorization", response_model=ApiResponse[LiveAuthorizationStatus])
+async def get_live_authorization_status(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[LiveAuthorizationStatus]:
+    """Inspects live readiness and explicit consent status."""
+    engine = ExecutionEngine()
+    status_obj = await engine.get_live_authorization_status(db=db)
+    return success_response(status_obj, request=request, data_source="SYSTEM")
+
+
+@router.post("/live-authorization", response_model=ApiResponse[LiveAuthorizationStatus])
+async def grant_live_authorization(
+    request: Request,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[LiveAuthorizationStatus]:
+    """
+    Submits explicit operator consent token for LIVE trading mode.
+    Requires matching secret token and compliant preconditions.
+    """
+    token = payload.get("consentToken", "")
+    expected = LIVE_AUTHORIZATION_REGISTRY["requiredSecret"]
+
+    from datetime import datetime, timezone
+
+    if token != expected:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid consent token. Explicit confirmation token '{expected}' is required.",
+        )
+
+    LIVE_AUTHORIZATION_REGISTRY["hasExplicitConsent"] = True
+    LIVE_AUTHORIZATION_REGISTRY["authorizedAt"] = datetime.now(timezone.utc).isoformat()
+    LIVE_AUTHORIZATION_REGISTRY["authorizedBy"] = user.email
+
+    engine = ExecutionEngine()
+    status_obj = await engine.get_live_authorization_status(db=db)
+    if not status_obj.blockers:
+        LIVE_AUTHORIZATION_REGISTRY["isAuthorized"] = True
+        status_obj.is_authorized = True
+
+    return success_response(status_obj, request=request, data_source="SYSTEM")

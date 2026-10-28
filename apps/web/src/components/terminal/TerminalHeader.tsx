@@ -157,7 +157,7 @@ export const TerminalHeader: React.FC = () => {
           <button
             type="button"
             disabled
-            title="LIVE order execution is locked in Phase 3"
+            title="LIVE mode requires explicit operator consent token, active broker session, VPS static-IP compliance, and approved risk settings."
             className="px-2 py-0.5 rounded-md text-neutral-400 opacity-60 cursor-not-allowed flex items-center gap-1"
           >
             <Lock className="w-2.5 h-2.5" /> LIVE

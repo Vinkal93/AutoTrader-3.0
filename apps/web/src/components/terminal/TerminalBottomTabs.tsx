@@ -2,7 +2,15 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { usePositions, useOrders, useTrades, useSystemEvents } from '@/hooks/use-queries';
+import {
+  usePositions,
+  useOrders,
+  useTrades,
+  useSystemEvents,
+  useCancelOrder,
+  useReconcileOrders,
+  useFailureModes,
+} from '@/hooks/use-queries';
 import { OrderLifecycleState } from '@autotrader/api-contracts';
 import { formatCurrency, formatISTDateTime } from '@/lib/formatters';
 import {
@@ -15,17 +23,23 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  RefreshCw,
+  HelpCircle,
 } from 'lucide-react';
 
 export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className }) => {
   const [activeTab, setActiveTab] = useState<
-    'POSITIONS' | 'PENDING' | 'HISTORY' | 'EXECUTIONS' | 'LIFECYCLE' | 'ALERTS'
+    'POSITIONS' | 'PENDING' | 'HISTORY' | 'EXECUTIONS' | 'LIFECYCLE' | 'ALERTS' | 'FAILURE_MODES'
   >('POSITIONS');
 
   const { data: positions, isLoading: posLoading } = usePositions();
   const { data: orders, isLoading: ordersLoading } = useOrders();
   const { data: trades, isLoading: tradesLoading } = useTrades();
   const { data: events, isLoading: eventsLoading } = useSystemEvents(25);
+  const { data: failureModes } = useFailureModes();
+
+  const cancelOrder = useCancelOrder();
+  const reconcileOrders = useReconcileOrders();
 
   const pendingOrders = (orders ?? []).filter((o) => o.status === 'OPEN' || o.status === 'PENDING');
   const pastOrders = (orders ?? []).filter((o) => o.status !== 'OPEN' && o.status !== 'PENDING');
@@ -133,6 +147,33 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
           <ShieldAlert className="w-3.5 h-3.5" />
           System Alerts
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('FAILURE_MODES')}
+          className={cn(
+            'px-3 py-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap',
+            activeTab === 'FAILURE_MODES'
+              ? 'border-blue-600 text-blue-600 font-bold'
+              : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          )}
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          Failure Modes & Runbooks ({failureModes?.length ?? 18})
+        </button>
+
+        <div className="ml-auto pr-2">
+          <button
+            type="button"
+            onClick={() => reconcileOrders.mutate()}
+            disabled={reconcileOrders.isPending}
+            className="px-2.5 py-1 text-[11px] font-sans font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg flex items-center gap-1 transition-all disabled:opacity-50"
+            title="Reconcile broker orders and positions with local database"
+          >
+            <RefreshCw className={cn('w-3 h-3', reconcileOrders.isPending && 'animate-spin')} />
+            {reconcileOrders.isPending ? 'Reconciling...' : 'Reconcile Broker'}
+          </button>
+        </div>
       </div>
 
       {/* Tab Contents */}
@@ -249,7 +290,13 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                       <td className="py-2.5 px-3 text-right">
                         <button
                           type="button"
-                          className="text-[11px] font-sans font-bold text-rose-600 hover:text-rose-800"
+                          onClick={() => {
+                            if (confirm(`Cancel order ${ord.id.slice(0, 8)}?`)) {
+                              cancelOrder.mutate({ orderId: ord.id });
+                            }
+                          }}
+                          disabled={cancelOrder.isPending}
+                          className="text-[11px] font-sans font-bold text-rose-600 hover:text-rose-800 disabled:opacity-50"
                         >
                           Cancel
                         </button>
@@ -421,6 +468,47 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* TAB 7: FAILURE MODES & RECOVERY RUNBOOKS */}
+        {activeTab === 'FAILURE_MODES' && (
+          <div className="space-y-3">
+            <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200 text-xs text-blue-900 flex items-start gap-2">
+              <ShieldAlert className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+              <div>
+                <strong>Phase 5 High-Availability Failure Catalog:</strong> 18 automated safety
+                protections, single-authority exit transitions, and manual disaster recovery runbooks.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {(failureModes ?? []).map((fm) => (
+                <div
+                  key={fm.scenarioId}
+                  className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800">
+                      {fm.scenarioId}
+                    </span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 uppercase">
+                      {fm.category}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-neutral-900 leading-snug">{fm.title}</h4>
+                  <div className="text-[11px] text-neutral-600">
+                    <strong className="text-neutral-700">Trigger:</strong> {fm.triggerCondition}
+                  </div>
+                  <div className="text-[11px] text-emerald-800 bg-emerald-50/70 p-1.5 rounded border border-emerald-100">
+                    <strong>Auto Action:</strong> {fm.automaticAction}
+                  </div>
+                  <div className="text-[11px] text-neutral-700 bg-neutral-100/70 p-1.5 rounded border border-neutral-200 font-mono">
+                    <strong>Runbook:</strong> {fm.recoveryRunbook}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

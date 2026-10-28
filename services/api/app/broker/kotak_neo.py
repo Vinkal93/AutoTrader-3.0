@@ -388,6 +388,110 @@ class KotakNeoAdapter(BrokerAdapter):
         """Calculate required margin."""
         return {"requiredMargin": "0.00", "availableMargin": "0.00"}
 
+    async def place_order(
+        self,
+        trading_symbol: str,
+        exchange: str,
+        side: str,
+        order_type: str,
+        quantity: int,
+        price: str,
+        trigger_price: Optional[str] = None,
+        product: str = "NRML",
+        validity: str = "DAY",
+        tag: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Submit order to Kotak Neo OMS."""
+        if self._state != BrokerConnectionState.CONNECTED or not self._client:
+            raise RuntimeError("Kotak Neo broker is not connected. Order submission aborted.")
+
+        try:
+            # Map standard order types to Kotak Neo parameters
+            # Kotak Neo accepts 'L' for LIMIT, 'MKT' for MARKET, 'SL' for Stop-Loss Limit, 'SL-M' for SL-Market
+            prc_type = "L"
+            if order_type.upper() in ("MARKET", "MKT"):
+                prc_type = "MKT"
+            elif order_type.upper() in ("SL", "SL_LIMIT", "SL-L"):
+                prc_type = "SL"
+            elif order_type.upper() in ("SL_MARKET", "SL-M"):
+                prc_type = "SL-M"
+
+            resp = self._client.place_order(
+                exchange_segment=exchange.lower(),
+                product=product,
+                price=price,
+                order_type=prc_type,
+                quantity=str(quantity),
+                validity=validity,
+                trading_symbol=trading_symbol,
+                transaction_type=side.upper(),
+                amo="NO",
+                disclosed_quantity="0",
+                market_protection="0",
+                pf="N",
+                trigger_price=trigger_price or "0",
+                tag=tag or "",
+            )
+            broker_order_no = resp.get("nOrdNo", "") if isinstance(resp, dict) else str(resp)
+            logger.info(f"Kotak Neo order placed: {broker_order_no} ({trading_symbol} {side} {quantity}@{price})")
+            return {
+                "brokerOrderId": str(broker_order_no),
+                "status": "ACKNOWLEDGED",
+                "raw": resp,
+            }
+        except Exception as exc:
+            logger.error(f"Kotak Neo place_order failed: {exc}")
+            self._handle_session_error(exc)
+            raise RuntimeError(f"Kotak Neo place_order failed: {exc}") from exc
+
+    async def modify_order(
+        self,
+        order_id: str,
+        price: Optional[str] = None,
+        quantity: Optional[int] = None,
+        trigger_price: Optional[str] = None,
+        order_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Modify open order on Kotak Neo."""
+        if self._state != BrokerConnectionState.CONNECTED or not self._client:
+            raise RuntimeError("Kotak Neo broker is not connected. Order modification aborted.")
+
+        try:
+            resp = self._client.modify_order(
+                order_id=order_id,
+                price=price or "0",
+                quantity=str(quantity) if quantity else "0",
+                trigger_price=trigger_price or "0",
+                validity="DAY",
+            )
+            return {"brokerOrderId": order_id, "status": "MODIFIED", "raw": resp}
+        except Exception as exc:
+            logger.error(f"Kotak Neo modify_order failed: {exc}")
+            self._handle_session_error(exc)
+            raise RuntimeError(f"Kotak Neo modify_order failed: {exc}") from exc
+
+    async def cancel_order(self, order_id: str) -> Dict[str, Any]:
+        """Cancel open order on Kotak Neo."""
+        if self._state != BrokerConnectionState.CONNECTED or not self._client:
+            raise RuntimeError("Kotak Neo broker is not connected. Order cancellation aborted.")
+
+        try:
+            resp = self._client.cancel_order(order_id=order_id, amo="NO")
+            logger.info(f"Kotak Neo order cancelled: {order_id}")
+            return {"brokerOrderId": order_id, "status": "CANCELLED", "raw": resp}
+        except Exception as exc:
+            logger.error(f"Kotak Neo cancel_order failed: {exc}")
+            self._handle_session_error(exc)
+            raise RuntimeError(f"Kotak Neo cancel_order failed: {exc}") from exc
+
+    async def get_order_by_id(self, order_id: str) -> Optional[Order]:
+        """Query Kotak Neo order report for specific order."""
+        orders = await self.get_orders()
+        for o in orders:
+            if o.broker_order_id == order_id or o.id == order_id or o.idempotency_key == order_id:
+                return o
+        return None
+
     def _handle_session_error(self, exc: Exception) -> None:
         """Transition connection state on session expiration or network error."""
         err_msg = str(exc).lower()

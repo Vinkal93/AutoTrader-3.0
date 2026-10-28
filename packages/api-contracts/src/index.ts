@@ -727,6 +727,88 @@ export interface BacktestResult {
   signalLog: BacktestSignalLog[];
 }
 
+// ---- Execution & Risk Engine (Phase 5) ----
+
+export interface OrderSubmissionRequest {
+  tradingSymbol: string;
+  exchange: Exchange;
+  side: OrderSide;
+  orderType: OrderType;
+  quantity: number;
+  price: string;
+  triggerPrice?: string;
+  tradingMode: TradingMode;
+  idempotencyKey?: string;
+  strategyRunId?: string;
+}
+
+export interface OrderSubmissionResult {
+  orderId: string;
+  brokerOrderId: string | null;
+  lifecycleState: OrderLifecycleState;
+  status: OrderStatus;
+  tradingSymbol: string;
+  side: OrderSide;
+  quantity: number;
+  filledQuantity: number;
+  price: string;
+  averageFilledPrice: string | null;
+  placedAt: string;
+  message: string;
+}
+
+export interface OrderCancelRequest {
+  orderId: string;
+  reason?: string;
+}
+
+export interface OrderCancelResult {
+  orderId: string;
+  brokerOrderId: string | null;
+  lifecycleState: OrderLifecycleState;
+  cancelledAt: string;
+  message: string;
+}
+
+export interface ReconciliationDiscrepancy {
+  orderId: string;
+  brokerOrderId: string | null;
+  brokerStatus: string;
+  localStatus: string;
+  actionTaken: string;
+}
+
+export interface ReconciliationReport {
+  reconciledAt: string;
+  brokerOrdersCount: number;
+  dbOrdersCount: number;
+  discrepanciesCount: number;
+  discrepancies: ReconciliationDiscrepancy[];
+  engineState: EngineState;
+  status: 'CLEAN' | 'RESOLVED' | 'REQUIRES_MANUAL_INTERVENTION';
+}
+
+export interface LiveAuthorizationStatus {
+  isAuthorized: boolean;
+  hasExplicitConsent: boolean;
+  isBrokerConnected: boolean;
+  isStaticIpCompliant: boolean;
+  areRiskSettingsApproved: boolean;
+  blockers: string[];
+  authorizedAt: string | null;
+  authorizedBy: string | null;
+}
+
+export interface FailureModeItem {
+  scenarioId: string;
+  category: 'NETWORK' | 'BROKER_API' | 'EXECUTION' | 'INFRASTRUCTURE' | 'RISK';
+  title: string;
+  triggerCondition: string;
+  automaticAction: string;
+  recoveryRunbook: string;
+  unprotectedWindowSeconds: number;
+}
+
 // ---- API Route Definitions ----
 
 export const API_ROUTES = {
@@ -740,6 +822,9 @@ export const API_ROUTES = {
   accountFunds: '/api/v1/account/funds',
   positions: '/api/v1/positions',
   orders: '/api/v1/orders',
+  ordersSubmit: '/api/v1/orders/submit',
+  ordersCancel: '/api/v1/orders/:id/cancel',
+  ordersReconcile: '/api/v1/orders/reconcile',
   trades: '/api/v1/trades',
   tradeCycles: '/api/v1/trade-cycles',
   niftyQuote: '/api/v1/market/nifty',
@@ -755,4 +840,6 @@ export const API_ROUTES = {
   dashboardOverview: '/api/v1/dashboard/overview',
   analyticsPerformance: '/api/v1/analytics/performance',
   systemEvents: '/api/v1/system/events',
+  systemFailureModes: '/api/v1/system/failure-modes',
+  systemLiveAuthorization: '/api/v1/system/live-authorization',
 } as const;

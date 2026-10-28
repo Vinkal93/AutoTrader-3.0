@@ -13,8 +13,16 @@ from app.routers.deps import success_response
 from app.schemas.account import Order
 from app.schemas.analytics import ChargeBreakdown
 from app.schemas.common import ApiResponse
+from app.schemas.execution_engine import (
+    OrderCancelRequest,
+    OrderCancelResult,
+    OrderSubmissionRequest,
+    OrderSubmissionResult,
+    ReconciliationReport,
+)
 from app.schemas.market_scanner import OrderValidationRequest, OrderValidationResult
 from app.services.auth_service import CurrentUser, get_current_user
+from app.services.execution_engine import ExecutionEngine
 
 router = APIRouter(prefix="/api/v1", tags=["Orders"])
 
@@ -174,6 +182,61 @@ async def validate_order(
         ),
         request=request,
         data_source="COMPUTED",
+        freshness=DataFreshness.LIVE,
+    )
+
+
+@router.post("/orders/submit", response_model=ApiResponse[OrderSubmissionResult])
+async def submit_order(
+    request: Request,
+    payload: OrderSubmissionRequest,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[OrderSubmissionResult]:
+    """Submits order through 13-state deterministic lifecycle machine."""
+    engine = ExecutionEngine()
+    result = await engine.submit_order(payload, db)
+    return success_response(
+        result,
+        request=request,
+        data_source="BROKER" if payload.trading_mode == "LIVE" else "SIMULATED",
+        freshness=DataFreshness.LIVE,
+    )
+
+
+@router.post("/orders/{order_id}/cancel", response_model=ApiResponse[OrderCancelResult])
+async def cancel_order(
+    request: Request,
+    order_id: str,
+    payload: Optional[OrderCancelRequest] = None,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[OrderCancelResult]:
+    """Cancels an open order through state machine transitions."""
+    engine = ExecutionEngine()
+    reason = payload.reason if payload else "Operator requested cancellation"
+    result = await engine.cancel_order(order_id, reason, db)
+    return success_response(
+        result,
+        request=request,
+        data_source="DATABASE",
+        freshness=DataFreshness.LIVE,
+    )
+
+
+@router.post("/orders/reconcile", response_model=ApiResponse[ReconciliationReport])
+async def reconcile_orders(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[ReconciliationReport]:
+    """Reconciles broker orders and positions with database records."""
+    engine = ExecutionEngine()
+    result = await engine.reconcile_all_orders_and_positions(db)
+    return success_response(
+        result,
+        request=request,
+        data_source="BROKER",
         freshness=DataFreshness.LIVE,
     )
 

@@ -74,6 +74,16 @@ from app.schemas.strategy_engine import (
     StrategyScheduleStatus,
     StrategyVersionRecord,
 )
+from app.schemas.execution_engine import (
+    FailureModeItem,
+    LiveAuthorizationStatus,
+    OrderCancelRequest,
+    OrderCancelResult,
+    OrderSubmissionRequest,
+    OrderSubmissionResult,
+    ReconciliationDiscrepancy,
+    ReconciliationReport,
+)
 
 __all__ = [
     "CamelModel",
@@ -130,4 +140,12 @@ __all__ = [
     "BacktestSignalLog",
     "BacktestRequest",
     "BacktestResult",
+    "OrderSubmissionRequest",
+    "OrderSubmissionResult",
+    "OrderCancelRequest",
+    "OrderCancelResult",
+    "ReconciliationDiscrepancy",
+    "ReconciliationReport",
+    "LiveAuthorizationStatus",
+    "FailureModeItem",
 ]

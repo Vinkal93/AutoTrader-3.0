@@ -85,8 +85,38 @@ In automated options trading, bracket orders must not rely on fragile client-sid
 
 ---
 
-## 5. Phase 3 Safety Lock Verification
+## 5. Phase 5 Implementation: Execution Engine & Single-Authority Exit Manager
 
-In Phase 3:
-- Market Scanner, Option Chain ingestion, Canonical EMA 9/21 Trend Analysis, and Pre-flight Trade Ticket Validation are **fully operational**.
-- Live order execution remains **locked to PAPER simulation mode**. Live real-money broker order submission is disabled until the Phase 4 execution engine authorization.
+### 5.1 Single-Authority Exit Manager & Cancel-Confirm-Reconcile Sequence
+Because Indian retail options brokers (including Kotak Neo) do not provide native exchange-level OCO bracket orders for options buying, placing simultaneous independent SELL orders at Target and Stop-Loss creates catastrophic risk: if the target fills, the stop order remains active at the exchange and can trigger later, turning the trader unintentionally SHORT into naked option writing.
+
+To prevent this, the engine enforces a **Single-Authority Exit Manager**:
+1. Upon confirmed BUY fill, **only ONE resting protective order** is placed at the broker: an exchange-side **Stop-Loss Limit (SL-L)** order.
+2. When the target price is reached (or at mandatory 15:15 IST intraday exit, or on operator emergency halt):
+   - **Step A (`CANCEL_PENDING`)**: A cancel request is dispatched for the resting SL-L order.
+   - **Step B (`CANCELLED` Confirmation)**: The engine awaits explicit acknowledgment of cancellation from the broker.
+   - **Step C (Position Reconciliation & Race Handling)**: The engine polls broker tradebook to verify whether the stop order was filled in the matching engine during transit before the cancel arrived:
+     - If the stop *filled during the race*, the trade cycle is marked closed at Stop-Loss. Duplicate target order dispatch is strictly aborted.
+     - If the stop *is confirmed cancelled* and the long position remains open, the engine submits the Target SELL limit order.
+3. **Documented Unprotected Interval**:
+   A deterministic latency window (typically 50ms to 200ms depending on broker network RTT) exists between the cancellation confirmation of the SL-L order and the exchange acceptance of the target SELL order. During this brief window, the position is unhedged. The autonomous worker continuously monitors quotes; if price drops rapidly during this window, an emergency market square-off is triggered.
+
+### 5.2 Critical Disclaimer: SL-L Orders Do NOT Guarantee Execution
+> [!CAUTION]
+> **A Stop-Loss Limit (SL-L) order does NOT guarantee execution or a fixed maximum loss.**
+> In fast-moving gap-down markets or illiquid strikes, if the market price jumps below both the trigger price and the limit price without matching any orders, the order will remain resting on the exchange order book as an unfilled limit order while losses continue to mount. 
+> The autonomous Execution Engine actively tracks quote slippage: if the contract price drops 5% beyond the stop trigger while the order rests unfilled, the worker initiates emergency slippage protection square-off.
+
+### 5.3 Protective SL-L Submission Failure (Emergency Procedure)
+If the broker or exchange rejects the initial protective SL-L order following a BUY fill (due to margin, circuit limit, or API error):
+1. The engine transitions immediately into `EngineState.RISK_LOCKED`.
+2. All further automated entries are frozen.
+3. An emergency risk-reduction procedure is executed immediately: a market/limit square-off order is submitted to flatten the unprotected open position.
+4. A CRITICAL `SystemEvent` is logged and broadcast to supervisor channels.
+
+### 5.4 Four-Part LIVE Safety Gate
+To prevent accidental real-money execution, LIVE trading activation requires all four gates to be strictly verified:
+1. **Explicit Operator Consent Token**: Required confirmation secret (`AUTHORIZE_LIVE_NIFTY_TRADING_3.0`).
+2. **Active Broker Session**: Kotak Neo session state verified as `CONNECTED`.
+3. **VPS Static-IP Compliance**: Egress IP matches the registered static IP at Kotak Neo.
+4. **Approved Risk Configuration**: Both `maxDailyLoss` and `maxRiskPerTrade` must be populated with positive numerical thresholds in the active strategy version.

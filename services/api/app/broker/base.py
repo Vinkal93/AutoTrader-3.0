@@ -95,10 +95,41 @@ class BrokerAdapter(ABC):
         """Estimate required margin for a given order."""
         pass
 
-    def place_order(self, **kwargs) -> Any:
-        """Guard against premature live trading in Phase 1."""
-        raise NotImplementedError("Order placement is locked in Phase 1")
+    @abstractmethod
+    async def place_order(
+        self,
+        trading_symbol: str,
+        exchange: str,
+        side: str,
+        order_type: str,
+        quantity: int,
+        price: str,
+        trigger_price: Optional[str] = None,
+        product: str = "NRML",
+        validity: str = "DAY",
+        tag: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Place order with broker. In LIVE mode, submits to broker OMS; in PAPER mode, simulated."""
+        pass
 
-    def cancel_order(self, **kwargs) -> Any:
-        """Guard against order modification in Phase 1."""
-        raise NotImplementedError("Order modification is locked in Phase 1")
+    @abstractmethod
+    async def modify_order(
+        self,
+        order_id: str,
+        price: Optional[str] = None,
+        quantity: Optional[int] = None,
+        trigger_price: Optional[str] = None,
+        order_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Modify an existing open order with broker."""
+        pass
+
+    @abstractmethod
+    async def cancel_order(self, order_id: str) -> Dict[str, Any]:
+        """Cancel an open order with broker."""
+        pass
+
+    @abstractmethod
+    async def get_order_by_id(self, order_id: str) -> Optional[Order]:
+        """Fetch status of specific order from broker orderbook."""
+        pass

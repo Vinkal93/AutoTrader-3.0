@@ -31,6 +31,13 @@ import {
   type BacktestRequest,
   type BacktestResult,
   type StrategyConfig,
+  type OrderSubmissionRequest,
+  type OrderSubmissionResult,
+  type OrderCancelRequest,
+  type OrderCancelResult,
+  type ReconciliationReport,
+  type LiveAuthorizationStatus,
+  type FailureModeItem,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -58,6 +65,8 @@ export const queryKeys = {
   strategySchedule: (id: string) => ['strategySchedule', id] as const,
   dashboardOverview: ['dashboardOverview'] as const,
   systemEvents: ['systemEvents'] as const,
+  failureModes: ['failureModes'] as const,
+  liveAuthorization: ['liveAuthorization'] as const,
 };
 
 // 1. Health
@@ -497,6 +506,100 @@ export function useBacktestStrategy() {
     mutationFn: async (payload: BacktestRequest) => {
       const res = await api.post<BacktestResult>(API_ROUTES.strategyBacktest, payload);
       return res.data;
+    },
+  });
+}
+
+// 23. Phase 5: Submit Order
+export function useSubmitOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: OrderSubmissionRequest) => {
+      const res = await api.post<OrderSubmissionResult>(API_ROUTES.ordersSubmit, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      queryClient.invalidateQueries({ queryKey: queryKeys.positions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.trades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+// 24. Phase 5: Cancel Order
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, reason }: { orderId: string; reason?: string }) => {
+      const res = await api.post<OrderCancelResult>(`/api/v1/orders/${orderId}/cancel`, {
+        orderId,
+        reason,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+// 25. Phase 5: Reconcile Orders
+export function useReconcileOrders() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post<ReconciliationReport>(API_ROUTES.ordersReconcile);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      queryClient.invalidateQueries({ queryKey: queryKeys.positions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.trades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+// 26. Phase 5: Failure Modes
+export function useFailureModes() {
+  return useQuery({
+    queryKey: queryKeys.failureModes,
+    queryFn: async () => {
+      const res = await api.get<FailureModeItem[]>(API_ROUTES.systemFailureModes);
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+}
+
+// 27. Phase 5: Live Authorization Status
+export function useLiveAuthorization(refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.liveAuthorization,
+    queryFn: async () => {
+      const res = await api.get<LiveAuthorizationStatus>(API_ROUTES.systemLiveAuthorization);
+      return res.data;
+    },
+    refetchInterval,
+  });
+}
+
+// 28. Phase 5: Grant Live Authorization
+export function useGrantLiveAuthorization() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (consentToken: string) => {
+      const res = await api.post<LiveAuthorizationStatus>(API_ROUTES.systemLiveAuthorization, {
+        consentToken,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.liveAuthorization });
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
     },
   });
 }

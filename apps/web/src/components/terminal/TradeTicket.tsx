@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { useValidateOrder } from '@/hooks/use-queries';
-import { OptionType, OrderSide } from '@autotrader/api-contracts';
+import { useValidateOrder, useSubmitOrder } from '@/hooks/use-queries';
+import { OptionType, OrderSide, OrderType, TradingMode } from '@autotrader/api-contracts';
 import { formatCurrency } from '@/lib/formatters';
 import {
   FileText,
@@ -35,6 +35,7 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
   const [simulatedOrderSuccess, setSimulatedOrderSuccess] = useState(false);
 
   const validateOrder = useValidateOrder();
+  const submitOrder = useSubmitOrder();
 
   // Sync price when new contract selected
   useEffect(() => {
@@ -73,9 +74,29 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
   const validation = validateOrder.data;
 
   const handleSimulatedSubmit = () => {
-    setSimulatedOrderSuccess(true);
-    setConfirmModalOpen(false);
-    setTimeout(() => setSimulatedOrderSuccess(false), 5000);
+    if (!selectedContract) return;
+    submitOrder.mutate(
+      {
+        tradingSymbol: selectedContract.tradingSymbol,
+        exchange: 'NFO' as any,
+        side: OrderSide.BUY,
+        orderType: OrderType.LIMIT,
+        quantity,
+        price: intendedPrice,
+        tradingMode: TradingMode.PAPER,
+      },
+      {
+        onSuccess: () => {
+          setSimulatedOrderSuccess(true);
+          setConfirmModalOpen(false);
+          setTimeout(() => setSimulatedOrderSuccess(false), 5000);
+        },
+        onError: (err) => {
+          alert(`Order submission failed: ${err.message}`);
+          setConfirmModalOpen(false);
+        },
+      }
+    );
   };
 
   if (!selectedContract) {
@@ -207,6 +228,9 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
             <span>Gross Loss: -₹{validation?.estimatedGrossLoss ?? '75.00'}</span>
             <span>Net Max Loss: {validation?.estimatedNetLoss ? `₹${validation.estimatedNetLoss}` : '—'}</span>
           </div>
+          <p className="text-[10px] text-rose-600/90 font-sans italic pt-0.5">
+            Notice: Stop-Loss Limit (SL-L) orders do not guarantee execution or a fixed maximum loss in fast gap-down markets.
+          </p>
         </div>
 
         {/* Itemized Statutory Fee Estimates */}
