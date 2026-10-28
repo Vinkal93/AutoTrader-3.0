@@ -22,12 +22,65 @@ class EngineState(str, Enum):
 
 
 class BrokerConnectionState(str, Enum):
+    # Rule 24 Genuine States
     NOT_CONFIGURED = "NOT_CONFIGURED"
+    ACCESS_PENDING = "ACCESS_PENDING"
+    LOADING = "LOADING"
+    READY = "READY"
+    STALE = "STALE"
+    NOT_CONNECTED = "NOT_CONNECTED"
+    ERROR = "ERROR"
+    UNSUPPORTED = "UNSUPPORTED"
+    # Backward compatibility shims
     DISCONNECTED = "DISCONNECTED"
     CONNECTING = "CONNECTING"
     CONNECTED = "CONNECTED"
     SESSION_EXPIRED = "SESSION_EXPIRED"
-    ERROR = "ERROR"
+
+
+class SupportedBroker(str, Enum):
+    KOTAK_NEO = "KOTAK_NEO"
+    ZERODHA_KITE = "ZERODHA_KITE"
+    UPSTOX = "UPSTOX"
+    ANGEL_ONE = "ANGEL_ONE"
+    DHAN = "DHAN"
+    FYERS = "FYERS"
+
+
+class BrokerAuthModel(str, Enum):
+    OAUTH2 = "OAUTH2"
+    CREDENTIAL_TOTP = "CREDENTIAL_TOTP"
+    ACCESS_TOKEN = "ACCESS_TOKEN"
+
+
+class SubscriptionPlanTier(str, Enum):
+    FREE = "FREE"
+    STARTER = "STARTER"
+    PRO = "PRO"
+    ENTERPRISE = "ENTERPRISE"
+
+
+class SubscriptionStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    TRIAL = "TRIAL"
+    PAST_DUE = "PAST_DUE"
+    CANCELLED = "CANCELLED"
+
+
+class ComplianceDeclarationType(str, Enum):
+    RETAIL_ALGO_ACKNOWLEDGMENT = "RETAIL_ALGO_ACKNOWLEDGMENT"
+    RISK_DISCLOSURE_DERIVATIVES = "RISK_DISCLOSURE_DERIVATIVES"
+    STATIC_IP_CONSENT = "STATIC_IP_CONSENT"
+    TERMS_OF_SERVICE = "TERMS_OF_SERVICE"
+
+
+class AutomationRunStatus(str, Enum):
+    PENDING = "PENDING"
+    EVALUATING = "EVALUATING"
+    SIGNAL_GENERATED = "SIGNAL_GENERATED"
+    ORDER_PLACED = "ORDER_PLACED"
+    SKIPPED = "SKIPPED"
+    FAILED = "FAILED"
 
 
 class OrderSide(str, Enum):
