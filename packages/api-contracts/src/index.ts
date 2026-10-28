@@ -1140,6 +1140,7 @@ export const API_ROUTES = {
   systemIncidentAction: '/api/v1/system/incidents/action',
   watchdogStatus: '/api/v1/watchdog/status',
   watchdogRunCheck: '/api/v1/watchdog/check',
+  watchdogRunbook: '/api/v1/watchdog/runbook',
   notificationsConfig: '/api/v1/notifications/config',
   notificationsDeliveries: '/api/v1/notifications/deliveries',
   recoveryReconcile: '/api/v1/recovery/reconcile',
