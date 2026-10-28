@@ -150,14 +150,14 @@ export default function AnalyticsPage() {
 
       {/* Custom Date Inputs if CUSTOM timeframe selected */}
       {timeframe === 'CUSTOM' && (
-        <div className="bg-neutral-50 rounded-2xl border border-neutral-200 p-4 flex flex-wrap items-center gap-4 text-xs font-mono animate-in fade-in duration-150">
+        <div className="bg-neutral-50 rounded-2xl border border-neutral-200 p-4 flex flex-wrap items-center gap-4 text-xs tabular-nums animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
             <span className="text-neutral-500 font-semibold">Start Date:</span>
             <input
               type="datetime-local"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-2.5 py-1 bg-white border border-neutral-200 rounded-md focus:outline-none focus:border-blue-500 text-xs"
+              className="px-2.5 py-1 bg-white border border-neutral-200 rounded-md focus:outline-none focus:border-blue-500 text-xs tabular-nums"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
               type="datetime-local"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-2.5 py-1 bg-white border border-neutral-200 rounded-md focus:outline-none focus:border-blue-500 text-xs"
+              className="px-2.5 py-1 bg-white border border-neutral-200 rounded-md focus:outline-none focus:border-blue-500 text-xs tabular-nums"
             />
           </div>
           <button

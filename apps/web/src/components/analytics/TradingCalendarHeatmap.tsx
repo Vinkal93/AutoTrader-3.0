@@ -32,7 +32,7 @@ export const TradingCalendarHeatmap: React.FC<TradingCalendarHeatmapProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Trading Calendar Heatmap</h3>
-            <span className="text-[10px] font-mono text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-semibold tracking-wider uppercase text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
               Daily Realizations
             </span>
           </div>
@@ -41,14 +41,14 @@ export const TradingCalendarHeatmap: React.FC<TradingCalendarHeatmapProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono">
+        <div className="flex items-center gap-3 text-xs font-medium">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
-            <span className="text-neutral-600 font-bold">{profitDays} Green Days</span>
+            <span className="text-neutral-700 font-semibold">{profitDays} Green Days</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" />
-            <span className="text-neutral-600 font-bold">{lossDays} Red Days</span>
+            <span className="text-neutral-700 font-semibold">{lossDays} Red Days</span>
           </div>
           {breakevenDays > 0 && (
             <div className="flex items-center gap-1.5">
@@ -82,20 +82,20 @@ export const TradingCalendarHeatmap: React.FC<TradingCalendarHeatmapProps> = ({
                   key={idx}
                   className={`p-3 rounded-xl border transition-all hover:shadow-xs group relative flex flex-col justify-between ${tileBg}`}
                 >
-                  <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                  <div className="flex items-center justify-between text-[11px] tabular-nums font-bold">
                     <span>{day.date.slice(5)}</span>
                     <span className="text-[10px] opacity-70">{day.tradesCount}t</span>
                   </div>
 
                   <div className="mt-2 text-right">
-                    <p className="font-mono text-sm font-bold">
+                    <p className="tabular-nums text-sm font-bold">
                       {formatCurrency(day.netPnl)}
                     </p>
                   </div>
 
                   {/* Tooltip */}
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none">
-                    <div className="bg-neutral-900 text-white rounded-lg p-2.5 text-[11px] font-mono shadow-lg whitespace-nowrap min-w-[140px]">
+                    <div className="bg-neutral-900 text-white rounded-lg p-2.5 text-[11px] tabular-nums shadow-lg whitespace-nowrap min-w-[140px]">
                       <p className="font-bold border-b border-neutral-700 pb-1 mb-1">{day.date}</p>
                       <div className="flex justify-between gap-4 text-neutral-300">
                         <span>Trades:</span>

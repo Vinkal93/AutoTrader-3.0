@@ -128,7 +128,7 @@ export default function FundsPage() {
             <span className="text-xs font-semibold text-neutral-600">Available Trading Margin</span>
             <Wallet className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="font-mono text-2xl font-bold text-neutral-900">
+          <p className="tabular-nums text-2xl font-bold text-neutral-900 tracking-tight">
             {funds?.availableMargin && isBrokerConnected ? formatCurrency(funds.availableMargin) : '—'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -142,7 +142,7 @@ export default function FundsPage() {
             <span className="text-xs font-semibold text-neutral-600">Utilized Margin</span>
             <Scale className="w-4 h-4 text-neutral-500" />
           </div>
-          <p className="font-mono text-2xl font-bold text-neutral-900">
+          <p className="tabular-nums text-2xl font-bold text-neutral-900 tracking-tight">
             {funds?.usedMargin && isBrokerConnected ? formatCurrency(funds.usedMargin) : '—'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -156,7 +156,7 @@ export default function FundsPage() {
             <span className="text-xs font-semibold text-neutral-600">Total Collateral Value</span>
             <Wallet className="w-4 h-4 text-neutral-500" />
           </div>
-          <p className="font-mono text-2xl font-bold text-neutral-900">
+          <p className="tabular-nums text-2xl font-bold text-neutral-900 tracking-tight">
             {funds?.totalCollateral && isBrokerConnected ? formatCurrency(funds.totalCollateral) : '—'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -170,7 +170,7 @@ export default function FundsPage() {
             <span className="text-xs font-semibold text-neutral-600">Unencumbered Cash</span>
             <Receipt className="w-4 h-4 text-neutral-500" />
           </div>
-          <p className="font-mono text-2xl font-bold text-neutral-900">
+          <p className="tabular-nums text-2xl font-bold text-neutral-900 tracking-tight">
             {funds?.availableCash && isBrokerConnected ? formatCurrency(funds.availableCash) : '—'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -193,7 +193,7 @@ export default function FundsPage() {
                   NSE Equity Options tariffs with effective dates (Union Budget revisions tracked)
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 tabular-nums">
                 Tariff v{(feeSchedules ?? [])[0]?.version ?? '2024.2'}
               </span>
             </div>
@@ -210,32 +210,32 @@ export default function FundsPage() {
                 <tbody className="divide-y divide-neutral-100">
                   <tr className="hover:bg-neutral-50/50">
                     <td className="py-3 px-3 font-semibold text-neutral-900">Brokerage</td>
-                    <td className="py-3 px-3 font-mono text-neutral-700">₹20.00 / executed order</td>
+                    <td className="py-3 px-3 tabular-nums font-medium text-neutral-700">₹20.00 / executed order</td>
                     <td className="py-3 px-3 text-neutral-500">Both Buy and Sell sides</td>
                   </tr>
                   <tr className="hover:bg-neutral-50/50">
                     <td className="py-3 px-3 font-semibold text-neutral-900">Securities Transaction Tax (STT)</td>
-                    <td className="py-3 px-3 font-mono text-neutral-700 font-bold text-blue-700">0.100% (Budget 2024 revision)</td>
+                    <td className="py-3 px-3 tabular-nums font-semibold text-blue-700">0.100% (Budget 2024 revision)</td>
                     <td className="py-3 px-3 text-neutral-500">Sell premium turnover (from Oct 1, 2024)</td>
                   </tr>
                   <tr className="hover:bg-neutral-50/50">
                     <td className="py-3 px-3 font-semibold text-neutral-900">Exchange Turnover Charge</td>
-                    <td className="py-3 px-3 font-mono text-neutral-700">0.0505% (NSE Options)</td>
+                    <td className="py-3 px-3 tabular-nums font-medium text-neutral-700">0.0505% (NSE Options)</td>
                     <td className="py-3 px-3 text-neutral-500">Premium turnover</td>
                   </tr>
                   <tr className="hover:bg-neutral-50/50">
                     <td className="py-3 px-3 font-semibold text-neutral-900">Goods & Services Tax (GST)</td>
-                    <td className="py-3 px-3 font-mono text-neutral-700">18.00%</td>
+                    <td className="py-3 px-3 tabular-nums font-medium text-neutral-700">18.00%</td>
                     <td className="py-3 px-3 text-neutral-500">On (Brokerage + Exchange Txn)</td>
                   </tr>
                   <tr className="hover:bg-neutral-50/50">
                     <td className="py-3 px-3 font-semibold text-neutral-900">SEBI Turnover Charges</td>
-                    <td className="py-3 px-3 font-mono text-neutral-700">₹10.00 / Crore turnover</td>
+                    <td className="py-3 px-3 tabular-nums font-medium text-neutral-700">₹10.00 / Crore turnover</td>
                     <td className="py-3 px-3 text-neutral-500">Premium turnover</td>
                   </tr>
                   <tr className="hover:bg-neutral-50/50">
                     <td className="py-3 px-3 font-semibold text-neutral-900">Stamp Duty</td>
-                    <td className="py-3 px-3 font-mono text-neutral-700">0.003% (₹300 / Crore)</td>
+                    <td className="py-3 px-3 tabular-nums font-medium text-neutral-700">0.003% (₹300 / Crore)</td>
                     <td className="py-3 px-3 text-neutral-500">Buy premium turnover only</td>
                   </tr>
                 </tbody>
@@ -267,7 +267,7 @@ export default function FundsPage() {
             </div>
 
             <div className="overflow-x-auto max-h-[360px]">
-              <table className="w-full text-left text-xs font-mono">
+              <table className="w-full text-left text-xs">
                 <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200 uppercase tracking-wider text-[10px]">
                   <tr>
                     <th className="py-2.5 px-3">Timestamp (IST)</th>
@@ -280,28 +280,28 @@ export default function FundsPage() {
                 <tbody className="divide-y divide-neutral-100">
                   {!snapshots || snapshots.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-neutral-400 font-sans text-xs">
+                      <td colSpan={5} className="py-8 text-center text-neutral-400 text-xs">
                         No historical balance snapshots recorded yet.
                       </td>
                     </tr>
                   ) : (
                     snapshots.map((s) => (
                       <tr key={s.id} className="hover:bg-neutral-50/50">
-                        <td className="py-2.5 px-3 text-neutral-600 text-[11px]">
+                        <td className="py-2.5 px-3 text-neutral-600 text-[11px] tabular-nums">
                           {formatISTDateTime(s.timestamp)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-bold text-neutral-900">
+                        <td className="py-2.5 px-3 text-right font-bold text-neutral-900 tabular-nums">
                           {formatCurrency(s.availableCash)}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-neutral-600">
+                        <td className="py-2.5 px-3 text-right text-neutral-600 tabular-nums">
                           {formatCurrency(s.usedMargin)}
                         </td>
-                        <td className="py-2.5 px-3 text-right text-blue-700 font-bold">
+                        <td className="py-2.5 px-3 text-right text-blue-700 font-bold tabular-nums">
                           {formatCurrency(s.availableMargin)}
                         </td>
                         <td
                           className={cn(
-                            'py-2.5 px-3 text-right font-bold',
+                            'py-2.5 px-3 text-right font-bold tabular-nums',
                             parseFloat(s.realizedPnl) > 0
                               ? 'text-emerald-600'
                               : parseFloat(s.realizedPnl) < 0
@@ -357,7 +357,7 @@ export default function FundsPage() {
                     </h4>
                     <div className="max-h-40 overflow-y-auto space-y-1.5">
                       {importResult.discrepancies.map((d: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-amber-50/60 rounded-lg border border-amber-200 text-[11px] font-mono">
+                        <div key={idx} className="p-2 bg-amber-50/60 rounded-lg border border-amber-200 text-[11px] tabular-nums">
                           <div>Contract: <strong>{d.tradingSymbol}</strong></div>
                           <div>Estimated: ₹{d.estimatedFee} | Confirmed: ₹{d.confirmedFee} (Diff: ₹{d.difference})</div>
                           <div className="text-[10px] text-amber-700 font-sans">{d.reason}</div>
@@ -398,7 +398,7 @@ export default function FundsPage() {
                       type="date"
                       value={tradeDate}
                       onChange={(e) => setTradeDate(e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-neutral-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      className="w-full px-2.5 py-1.5 border border-neutral-200 rounded-xl tabular-nums text-xs focus:outline-none focus:ring-1 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -415,59 +415,59 @@ export default function FundsPage() {
 
                 <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2">
                   <span className="font-bold text-neutral-700 block">Confirmed Fee Breakdown from Broker Note</span>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
+                  <div className="grid grid-cols-3 gap-2 tabular-nums text-[11px]">
                     <div>
-                      <span className="text-neutral-500 text-[10px] block">Brokerage (₹)</span>
+                      <span className="text-neutral-500 text-[10px] block font-sans">Brokerage (₹)</span>
                       <input
                         type="text"
                         value={rawBrokerage}
                         onChange={(e) => setRawBrokerage(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white"
+                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white tabular-nums"
                       />
                     </div>
                     <div>
-                      <span className="text-neutral-500 text-[10px] block">STT (₹)</span>
+                      <span className="text-neutral-500 text-[10px] block font-sans">STT (₹)</span>
                       <input
                         type="text"
                         value={rawSTT}
                         onChange={(e) => setRawSTT(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white"
+                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white tabular-nums"
                       />
                     </div>
                     <div>
-                      <span className="text-neutral-500 text-[10px] block">Exch. Txn (₹)</span>
+                      <span className="text-neutral-500 text-[10px] block font-sans">Exch. Txn (₹)</span>
                       <input
                         type="text"
                         value={rawTxn}
                         onChange={(e) => setRawTxn(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white"
+                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white tabular-nums"
                       />
                     </div>
                     <div>
-                      <span className="text-neutral-500 text-[10px] block">GST (18%) (₹)</span>
+                      <span className="text-neutral-500 text-[10px] block font-sans">GST (18%) (₹)</span>
                       <input
                         type="text"
                         value={rawGST}
                         onChange={(e) => setRawGST(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white"
+                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white tabular-nums"
                       />
                     </div>
                     <div>
-                      <span className="text-neutral-500 text-[10px] block">SEBI (₹)</span>
+                      <span className="text-neutral-500 text-[10px] block font-sans">SEBI (₹)</span>
                       <input
                         type="text"
                         value={rawSEBI}
                         onChange={(e) => setRawSEBI(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white"
+                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white tabular-nums"
                       />
                     </div>
                     <div>
-                      <span className="text-neutral-500 text-[10px] block">Stamp Duty (₹)</span>
+                      <span className="text-neutral-500 text-[10px] block font-sans">Stamp Duty (₹)</span>
                       <input
                         type="text"
                         value={rawStamp}
                         onChange={(e) => setRawStamp(e.target.value)}
-                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white"
+                        className="w-full px-2 py-1 border border-neutral-200 rounded bg-white tabular-nums"
                       />
                     </div>
                   </div>

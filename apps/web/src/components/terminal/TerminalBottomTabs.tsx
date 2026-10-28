@@ -181,7 +181,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
         {/* TAB 1: POSITIONS */}
         {activeTab === 'POSITIONS' && (
           <div className="overflow-x-auto select-none">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
                 <tr>
                   <th className="py-2 px-3">Contract</th>
@@ -196,13 +196,13 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
               <tbody className="divide-y divide-neutral-100 text-neutral-800">
                 {posLoading ? (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-neutral-400 font-sans text-xs">
+                    <td colSpan={7} className="py-6 text-center text-neutral-400 text-xs">
                       Loading positions...
                     </td>
                   </tr>
                 ) : !positions || positions.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-neutral-400 font-sans text-xs">
+                    <td colSpan={7} className="py-6 text-center text-neutral-400 text-xs">
                       No open positions reported by broker.
                     </td>
                   </tr>
@@ -212,22 +212,22 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                     return (
                       <tr key={pos.tradingSymbol} className="hover:bg-neutral-50">
                         <td className="py-2.5 px-3 font-bold">{pos.tradingSymbol}</td>
-                        <td className="py-2.5 px-3 text-right">{pos.quantity}</td>
-                        <td className="py-2.5 px-3 text-right">₹{pos.averagePrice}</td>
-                        <td className="py-2.5 px-3 text-right font-bold">₹{pos.lastPrice}</td>
+                        <td className="py-2.5 px-3 text-right tabular-nums">{pos.quantity}</td>
+                        <td className="py-2.5 px-3 text-right tabular-nums">₹{pos.averagePrice}</td>
+                        <td className="py-2.5 px-3 text-right font-bold tabular-nums">₹{pos.lastPrice}</td>
                         <td
                           className={cn(
-                            'py-2.5 px-3 text-right font-bold',
+                            'py-2.5 px-3 text-right font-bold tabular-nums',
                             pnl > 0 ? 'text-emerald-600' : pnl < 0 ? 'text-red-600' : 'text-neutral-700'
                           )}
                         >
                           {pnl >= 0 ? '+' : ''}₹{pos.pnl}
                         </td>
-                        <td className="py-2.5 px-3 font-sans text-[11px] text-neutral-500">{pos.product}</td>
+                        <td className="py-2.5 px-3 text-[11px] text-neutral-500">{pos.product}</td>
                         <td className="py-2.5 px-3 text-right">
                           <button
                             type="button"
-                            className="text-[11px] font-sans font-bold text-rose-600 hover:text-rose-800"
+                            className="text-[11px] font-bold text-rose-600 hover:text-rose-800"
                           >
                             Close
                           </button>
@@ -244,7 +244,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
         {/* TAB 2: PENDING ORDERS */}
         {activeTab === 'PENDING' && (
           <div className="overflow-x-auto select-none">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
                 <tr>
                   <th className="py-2 px-3">Order ID</th>
@@ -312,7 +312,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
         {/* TAB 3: ORDER HISTORY */}
         {activeTab === 'HISTORY' && (
           <div className="overflow-x-auto select-none">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
                 <tr>
                   <th className="py-2 px-3">Placed At</th>
@@ -371,7 +371,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
         {/* TAB 4: TRADE EXECUTIONS */}
         {activeTab === 'EXECUTIONS' && (
           <div className="overflow-x-auto select-none">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
                 <tr>
                   <th className="py-2 px-3">Execution Time</th>
@@ -424,7 +424,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                   key={st}
                   className="flex items-center gap-1.5 p-2 bg-neutral-50 border border-neutral-200 rounded-xl"
                 >
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 font-mono font-bold text-[10px] flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 tabular-nums font-bold text-[10px] flex items-center justify-center">
                     {i + 1}
                   </span>
                   <span className="font-mono text-xs font-semibold text-neutral-800">{st}</span>
@@ -459,7 +459,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-neutral-900">{ev.category}</span>
-                      <span className="text-[10px] font-mono text-neutral-400">
+                      <span className="text-[10px] tabular-nums text-neutral-400">
                         {formatISTDateTime(ev.timestamp)}
                       </span>
                     </div>
@@ -503,7 +503,7 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                   <div className="text-[11px] text-emerald-800 bg-emerald-50/70 p-1.5 rounded border border-emerald-100">
                     <strong>Auto Action:</strong> {fm.automaticAction}
                   </div>
-                  <div className="text-[11px] text-neutral-700 bg-neutral-100/70 p-1.5 rounded border border-neutral-200 font-mono">
+                  <div className="text-[11px] text-neutral-700 bg-neutral-100/70 p-1.5 rounded border border-neutral-200">
                     <strong>Runbook:</strong> {fm.recoveryRunbook}
                   </div>
                 </div>

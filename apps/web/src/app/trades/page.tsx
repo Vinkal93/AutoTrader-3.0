@@ -180,7 +180,7 @@ export default function TradesPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-2.5 py-1.5 border border-neutral-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-2.5 py-1.5 border border-neutral-200 rounded-xl tabular-nums text-xs focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
 
@@ -191,7 +191,7 @@ export default function TradesPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-2.5 py-1.5 border border-neutral-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-2.5 py-1.5 border border-neutral-200 rounded-xl tabular-nums text-xs focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function TradesPage() {
               Showing {filteredCycles.length} verified trade cycle executions with itemized deductions
             </p>
           </div>
-          <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="text-xs tabular-nums font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
             Page {page}
           </span>
         </div>
@@ -229,7 +229,7 @@ export default function TradesPage() {
                 <th className="py-2.5 px-3">Cycle State</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 font-mono">
+            <tbody className="divide-y divide-neutral-100">
               {isLoading ? (
                 <tr>
                   <td colSpan={12} className="py-8 text-center text-neutral-400 font-sans text-xs">
@@ -269,10 +269,10 @@ export default function TradesPage() {
                             <ChevronRight className="w-3.5 h-3.5" />
                           )}
                         </td>
-                        <td className="py-3 px-3 text-neutral-600 text-[11px]">
+                        <td className="py-3 px-3 text-neutral-600 text-[11px] tabular-nums whitespace-nowrap">
                           {formatISTDateTime(c.startedAt)}
                         </td>
-                        <td className="py-3 px-3 font-bold text-neutral-900">
+                        <td className="py-3 px-3 font-semibold text-neutral-900">
                           <div className="flex items-center gap-1.5">
                             <span>{c.tradingSymbol}</span>
                             {c.optionType && (
@@ -297,25 +297,25 @@ export default function TradesPage() {
                             {c.tradingMode}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-right font-bold">{c.buyQuantity}</td>
-                        <td className="py-3 px-3 text-right">₹{c.buyAveragePrice}</td>
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-3 px-3 text-right font-semibold tabular-nums">{c.buyQuantity}</td>
+                        <td className="py-3 px-3 text-right tabular-nums text-neutral-700">₹{c.buyAveragePrice}</td>
+                        <td className="py-3 px-3 text-right tabular-nums text-neutral-700">
                           {c.state === 'CLOSED' ? `₹${c.sellAveragePrice}` : '—'}
                         </td>
                         <td
                           className={cn(
-                            'py-3 px-3 text-right font-bold',
+                            'py-3 px-3 text-right font-bold tabular-nums',
                             grossNum > 0 ? 'text-emerald-600' : grossNum < 0 ? 'text-rose-600' : 'text-neutral-600'
                           )}
                         >
                           {grossNum > 0 ? '+' : ''}₹{c.grossPnl}
                         </td>
-                        <td className="py-3 px-3 text-right text-neutral-500">
+                        <td className="py-3 px-3 text-right text-neutral-500 tabular-nums">
                           -₹{chargesNum.toFixed(2)}
                         </td>
                         <td
                           className={cn(
-                            'py-3 px-3 text-right font-extrabold',
+                            'py-3 px-3 text-right font-bold tabular-nums',
                             netNum > 0 ? 'text-emerald-600' : netNum < 0 ? 'text-rose-600' : 'text-neutral-600'
                           )}
                         >
@@ -362,22 +362,22 @@ export default function TradesPage() {
                                   <Clock className="w-3.5 h-3.5 text-blue-600" />
                                   Execution Timeline & Orders
                                 </h4>
-                                <div className="space-y-1.5 font-mono text-[11px]">
+                                <div className="space-y-1.5 text-[11px]">
                                   <div className="flex justify-between py-1 border-b border-neutral-100">
                                     <span className="text-neutral-500">Trade Cycle ID:</span>
-                                    <span className="font-bold text-neutral-800">{c.id}</span>
+                                    <span className="font-mono font-semibold text-neutral-800">{c.id}</span>
                                   </div>
                                   <div className="flex justify-between py-1 border-b border-neutral-100">
                                     <span className="text-neutral-500">Entry Order ID:</span>
-                                    <span className="text-neutral-800">{c.entryOrderId ?? 'None'}</span>
+                                    <span className="font-mono text-neutral-800">{c.entryOrderId ?? 'None'}</span>
                                   </div>
                                   <div className="flex justify-between py-1 border-b border-neutral-100">
                                     <span className="text-neutral-500">Exit Order ID:</span>
-                                    <span className="text-neutral-800">{c.exitOrderId ?? 'None'}</span>
+                                    <span className="font-mono text-neutral-800">{c.exitOrderId ?? 'None'}</span>
                                   </div>
                                   <div className="flex justify-between py-1 border-b border-neutral-100">
                                     <span className="text-neutral-500">Duration:</span>
-                                    <span className="text-neutral-800">
+                                    <span className="tabular-nums text-neutral-800 font-medium">
                                       {c.durationSeconds !== null ? `${c.durationSeconds}s` : 'Active'}
                                     </span>
                                   </div>
@@ -407,36 +407,36 @@ export default function TradesPage() {
                                   </span>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 font-mono text-[11px] pt-1">
+                                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
                                   <div className="flex justify-between p-1.5 bg-neutral-50 rounded">
                                     <span className="text-neutral-500">Brokerage:</span>
-                                    <span className="font-bold">₹{c.charges.brokerage}</span>
+                                    <span className="tabular-nums font-semibold text-neutral-900">₹{c.charges.brokerage}</span>
                                   </div>
                                   <div className="flex justify-between p-1.5 bg-neutral-50 rounded">
                                     <span className="text-neutral-500">STT (Options Sell):</span>
-                                    <span className="font-bold">₹{c.charges.stt}</span>
+                                    <span className="tabular-nums font-semibold text-neutral-900">₹{c.charges.stt}</span>
                                   </div>
                                   <div className="flex justify-between p-1.5 bg-neutral-50 rounded">
                                     <span className="text-neutral-500">Exchange Txn:</span>
-                                    <span className="font-bold">₹{c.charges.exchangeTxnCharge}</span>
+                                    <span className="tabular-nums font-semibold text-neutral-900">₹{c.charges.exchangeTxnCharge}</span>
                                   </div>
                                   <div className="flex justify-between p-1.5 bg-neutral-50 rounded">
                                     <span className="text-neutral-500">GST (18%):</span>
-                                    <span className="font-bold">₹{c.charges.gst}</span>
+                                    <span className="tabular-nums font-semibold text-neutral-900">₹{c.charges.gst}</span>
                                   </div>
                                   <div className="flex justify-between p-1.5 bg-neutral-50 rounded">
                                     <span className="text-neutral-500">SEBI Turnover:</span>
-                                    <span className="font-bold">₹{c.charges.sebiCharges}</span>
+                                    <span className="tabular-nums font-semibold text-neutral-900">₹{c.charges.sebiCharges}</span>
                                   </div>
                                   <div className="flex justify-between p-1.5 bg-neutral-50 rounded">
                                     <span className="text-neutral-500">Stamp Duty:</span>
-                                    <span className="font-bold">₹{c.charges.stampDuty}</span>
+                                    <span className="tabular-nums font-semibold text-neutral-900">₹{c.charges.stampDuty}</span>
                                   </div>
                                 </div>
 
-                                <div className="flex justify-between items-center p-2 bg-neutral-100 rounded-lg font-mono font-bold text-xs pt-1 mt-1">
-                                  <span>Total Statutory Charges:</span>
-                                  <span className="text-rose-600">-₹{c.charges.totalCharges}</span>
+                                <div className="flex justify-between items-center p-2 bg-neutral-100 rounded-lg font-bold text-xs pt-1 mt-1">
+                                  <span className="text-neutral-700">Total Statutory Charges:</span>
+                                  <span className="text-rose-600 tabular-nums">-₹{c.charges.totalCharges}</span>
                                 </div>
                               </div>
                             </div>

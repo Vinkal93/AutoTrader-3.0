@@ -3,6 +3,26 @@
 @tailwind utilities;
 
 :root {
+  --font-sans: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-mono), 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+
+  /* Typography scale tokens */
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+
+  /* Weights */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Theme tokens */
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
@@ -12,10 +32,110 @@
   --ring: 221.2 83.2% 53.3%;
 }
 
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.8 100% 47%;
+}
+
 body {
+  font-family: var(--font-sans);
   color: #111827;
   background-color: #f9fafb;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular numbers for financial metrics, currency, percentages, and timestamps */
+.tabular-nums,
+.num-metric {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: 'tnum';
+  font-feature-settings: 'tnum';
+}
+
+/* Indian Rupee symbol and currency styling */
+.currency-inr {
+  font-family: var(--font-sans);
+  font-feature-settings: 'tnum';
+  font-weight: inherit;
+}
+
+/* Standardized Financial Table Typography & Spacing */
+.financial-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.financial-table th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.financial-table td {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1f2937;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.financial-table tr:hover td {
+  background-color: #f9fafb;
+}
+
+/* Numeric columns in financial tables */
+.financial-table th.num-col,
+.financial-table td.num-col {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Heading Hierarchy */
+h1, .h1 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #111827;
+}
+
+h2, .h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+h3, .h3 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #111827;
+}
+
+h4, .h4 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1f2937;
+}
+
+/* Metric Display Values */
+.kpi-value {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
 }
 
 /* Custom scrollbars */

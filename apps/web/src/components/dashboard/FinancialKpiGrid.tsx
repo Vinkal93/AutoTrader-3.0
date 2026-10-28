@@ -80,12 +80,12 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
             {fundsLoading ? (
               <div className="h-7 w-24 bg-neutral-100 animate-pulse rounded" />
             ) : availableFunds !== null && isBrokerConnected ? (
-              <span className="font-mono text-xl font-bold text-neutral-900 tracking-tight">
+              <span className="tabular-nums text-xl font-bold text-neutral-900 tracking-tight">
                 {formatCurrency(availableFunds)}
               </span>
             ) : (
               <div className="flex items-center gap-1.5 text-neutral-400">
-                <span className="font-mono text-xl font-bold">—</span>
+                <span className="tabular-nums text-xl font-bold">—</span>
                 <span className="text-[11px] font-sans">
                   {broker?.state === BrokerConnectionState.NOT_CONFIGURED ? 'Unconfigured' : 'Disconnected'}
                 </span>
@@ -93,15 +93,15 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
             )}
           </div>
         </div>
-        <div className="pt-3 mt-3 border-t border-neutral-100 text-[11px] text-neutral-500 font-mono flex flex-col gap-0.5">
+        <div className="pt-3 mt-3 border-t border-neutral-100 text-[11px] text-neutral-500 tabular-nums flex flex-col gap-0.5">
           <div className="flex justify-between">
-            <span>Used Margin:</span>
+            <span className="font-normal">Used Margin:</span>
             <span className="text-neutral-700 font-semibold">
               {usedMargin !== null && isBrokerConnected ? formatCurrency(usedMargin) : '—'}
             </span>
           </div>
           <div className="flex justify-between">
-            <span>Collateral:</span>
+            <span className="font-normal">Collateral:</span>
             <span className="text-neutral-700 font-semibold">
               {totalCollateral !== null && isBrokerConnected ? formatCurrency(totalCollateral) : '—'}
             </span>
@@ -122,7 +122,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
             ) : grossNum !== null ? (
               <span
                 className={cn(
-                  'font-mono text-xl font-bold tracking-tight',
+                  'tabular-nums text-xl font-bold tracking-tight',
                   grossNum > 0 ? 'text-emerald-600' : grossNum < 0 ? 'text-red-600' : 'text-neutral-700'
                 )}
               >
@@ -131,7 +131,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
               </span>
             ) : (
               <div className="flex items-center gap-1 text-neutral-400">
-                <span className="font-mono text-xl font-bold">₹0.00</span>
+                <span className="tabular-nums text-xl font-bold">₹0.00</span>
                 <span className="text-[11px] text-neutral-400 font-sans">(No fills)</span>
               </div>
             )}
@@ -139,7 +139,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
         </div>
         <div className="pt-3 mt-3 border-t border-neutral-100 text-[11px] text-neutral-500 flex items-center justify-between">
           <span>Completed Fills:</span>
-          <span className="font-mono text-neutral-800 font-semibold">
+          <span className="tabular-nums text-neutral-800 font-semibold">
             {overview?.todaySummary?.completedTrades ?? 0}
           </span>
         </div>
@@ -153,7 +153,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
               <span className="text-xs font-semibold text-neutral-600 tracking-tight">Today&apos;s Net P&L</span>
               <span
                 className={cn(
-                  'text-[9px] font-mono px-1 py-0.2 rounded font-semibold uppercase',
+                  'text-[9px] px-1 py-0.2 rounded font-semibold uppercase',
                   chargesStatus === 'ACTUAL'
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                     : chargesStatus === 'ESTIMATED'
@@ -172,7 +172,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
             ) : netNum !== null ? (
               <span
                 className={cn(
-                  'font-mono text-xl font-bold tracking-tight',
+                  'tabular-nums text-xl font-bold tracking-tight',
                   netNum > 0 ? 'text-emerald-600' : netNum < 0 ? 'text-red-600' : 'text-neutral-700'
                 )}
               >
@@ -181,7 +181,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
               </span>
             ) : (
               <div className="flex items-center gap-1 text-neutral-400">
-                <span className="font-mono text-xl font-bold">₹0.00</span>
+                <span className="tabular-nums text-xl font-bold">₹0.00</span>
                 <span className="text-[11px] text-neutral-400 font-sans">(Net zero)</span>
               </div>
             )}
@@ -189,7 +189,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
         </div>
         <div className="pt-3 mt-3 border-t border-neutral-100 text-[11px] text-neutral-500 flex items-center justify-between">
           <span>Fee Deductions:</span>
-          <span className="font-mono text-neutral-700 font-semibold">
+          <span className="tabular-nums text-neutral-700 font-semibold">
             {totalChargesToday ? `-₹${totalChargesToday}` : '₹0.00'}
           </span>
         </div>
@@ -206,13 +206,13 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
             {overviewLoading ? (
               <div className="h-7 w-20 bg-neutral-100 animate-pulse rounded" />
             ) : (
-              <span className="font-mono text-xl font-bold text-neutral-900 tracking-tight">
+              <span className="tabular-nums text-xl font-bold text-neutral-900 tracking-tight">
                 {totalChargesToday ? formatCurrency(totalChargesToday) : '₹0.00'}
               </span>
             )}
           </div>
         </div>
-        <div className="pt-3 mt-3 border-t border-neutral-100 text-[10px] text-neutral-500 font-mono flex items-center justify-between">
+        <div className="pt-3 mt-3 border-t border-neutral-100 text-[10px] text-neutral-500 flex items-center justify-between">
           <span>Brokerage / STT / GST</span>
           <span className="text-neutral-400 font-sans text-[10px]">
             {chargesStatus === 'ACTUAL' ? 'Posted in Ledger' : 'Statutory Estimate'}
@@ -247,16 +247,16 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
               <div className="h-7 w-16 bg-neutral-100 animate-pulse rounded" />
             ) : closedCount > 0 ? (
               <>
-                <span className="font-mono text-xl font-bold text-neutral-900 tracking-tight">
+                <span className="tabular-nums text-xl font-bold text-neutral-900 tracking-tight">
                   {winRateVal.toFixed(1)}%
                 </span>
-                <span className="text-[11px] text-neutral-400 font-mono">
+                <span className="text-[11px] text-neutral-400 tabular-nums font-medium">
                   ({winsCount}W / {lossesCount}L)
                 </span>
               </>
             ) : (
               <div className="flex items-baseline gap-1 text-neutral-400">
-                <span className="font-mono text-xl font-bold">—</span>
+                <span className="tabular-nums text-xl font-bold">—</span>
                 <span className="text-[11px] font-sans">(0 closed cycles)</span>
               </div>
             )}
@@ -264,7 +264,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
         </div>
         <div className="pt-3 mt-3 border-t border-neutral-100 text-[11px] text-neutral-500 flex items-center justify-between">
           <span>Total Closed:</span>
-          <span className="font-mono text-neutral-800 font-semibold">{closedCount}</span>
+          <span className="tabular-nums text-neutral-800 font-semibold">{closedCount}</span>
         </div>
       </div>
 
@@ -283,11 +283,11 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
             {riskLoading ? (
               <div className="h-7 w-20 bg-neutral-100 animate-pulse rounded" />
             ) : isRiskLocked ? (
-              <span className="text-sm font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md font-mono">
+              <span className="text-sm font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
                 RISK LOCKED
               </span>
             ) : dailyLossLimit ? (
-              <span className="font-mono text-xl font-bold text-neutral-900 tracking-tight">
+              <span className="tabular-nums text-xl font-bold text-neutral-900 tracking-tight">
                 {remainingAllowance ? formatCurrency(remainingAllowance) : '—'}
               </span>
             ) : (
@@ -301,7 +301,7 @@ export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }
         </div>
         <div className="pt-3 mt-3 border-t border-neutral-100 text-[11px] text-neutral-500 flex items-center justify-between">
           <span>Max Daily Limit:</span>
-          <span className="font-mono text-neutral-800 font-semibold">
+          <span className="tabular-nums text-neutral-800 font-semibold">
             {dailyLossLimit ? formatCurrency(dailyLossLimit) : 'Unset'}
           </span>
         </div>

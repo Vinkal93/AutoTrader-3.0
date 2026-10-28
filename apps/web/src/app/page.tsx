@@ -75,7 +75,7 @@ export default function DashboardPage() {
                 <span className="font-bold text-xs text-neutral-900 tracking-tight">
                   Phase 2: Complete Dashboard & Live Broker Telemetry
                 </span>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
                   READ-ONLY MONITORING
                 </span>
               </div>

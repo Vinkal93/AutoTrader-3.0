@@ -117,7 +117,7 @@ export const SmartPremiumScannerCard: React.FC<SmartPremiumScannerCardProps> = (
               step="0.5"
               value={premiumMin}
               onChange={(e) => setPremiumMin(e.target.value)}
-              className="mt-1 w-full p-1 bg-white border border-neutral-200 rounded text-xs font-mono"
+              className="mt-1 w-full p-1 bg-white border border-neutral-200 rounded text-xs tabular-nums"
             />
           </div>
           <div>
@@ -127,7 +127,7 @@ export const SmartPremiumScannerCard: React.FC<SmartPremiumScannerCardProps> = (
               step="0.5"
               value={premiumMax}
               onChange={(e) => setPremiumMax(e.target.value)}
-              className="mt-1 w-full p-1 bg-white border border-neutral-200 rounded text-xs font-mono"
+              className="mt-1 w-full p-1 bg-white border border-neutral-200 rounded text-xs tabular-nums"
             />
           </div>
           <div>
@@ -137,7 +137,7 @@ export const SmartPremiumScannerCard: React.FC<SmartPremiumScannerCardProps> = (
               step="0.5"
               value={preferredPremium}
               onChange={(e) => setPreferredPremium(e.target.value)}
-              className="mt-1 w-full p-1 bg-white border border-neutral-200 rounded text-xs font-mono"
+              className="mt-1 w-full p-1 bg-white border border-neutral-200 rounded text-xs tabular-nums"
             />
           </div>
         </div>
@@ -156,17 +156,17 @@ export const SmartPremiumScannerCard: React.FC<SmartPremiumScannerCardProps> = (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Optimal Contract Discovered</span>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+              <span className="text-[10px] tabular-nums px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
                 Score: {selected.rankScore}
               </span>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-emerald-100">
               <div>
-                <span className="font-bold text-sm text-neutral-900 font-mono">
+                <span className="font-bold text-sm text-neutral-900">
                   {selected.tradingSymbol}
                 </span>
-                <div className="flex items-center gap-2 text-xs font-mono mt-0.5 text-neutral-600">
+                <div className="flex items-center gap-2 text-xs tabular-nums mt-0.5 text-neutral-600">
                   <span>Executable Ask: <strong className="text-neutral-900">₹{selected.askPrice.toFixed(2)}</strong></span>
                   <span>•</span>
                   <span>Spread: ₹{selected.bidAskSpread.toFixed(2)}</span>
@@ -212,7 +212,7 @@ export const SmartPremiumScannerCard: React.FC<SmartPremiumScannerCardProps> = (
             Evaluated Candidates Comparison ({scanResult.eligibleCount} eligible of {scanResult.totalEvaluated})
           </span>
           <div className="overflow-x-auto max-h-36 overflow-y-auto">
-            <table className="w-full text-left border-collapse text-[11px] font-mono">
+            <table className="w-full text-left border-collapse text-[11px]">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200 sticky top-0">
                 <tr>
                   <th className="py-1.5 px-2">Contract</th>

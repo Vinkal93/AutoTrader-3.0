@@ -106,7 +106,7 @@ export const TerminalChart: React.FC<{ className?: string }> = ({ className }) =
               type="button"
               onClick={() => setShowEma9(!showEma9)}
               className={cn(
-                'px-2 py-0.5 rounded-md border text-[11px] font-mono font-semibold transition-colors flex items-center gap-1',
+                'px-2 py-0.5 rounded-md border text-[11px] font-semibold transition-colors flex items-center gap-1',
                 showEma9 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-neutral-50 text-neutral-400 border-neutral-200'
               )}
             >
@@ -117,7 +117,7 @@ export const TerminalChart: React.FC<{ className?: string }> = ({ className }) =
               type="button"
               onClick={() => setShowEma21(!showEma21)}
               className={cn(
-                'px-2 py-0.5 rounded-md border text-[11px] font-mono font-semibold transition-colors flex items-center gap-1',
+                'px-2 py-0.5 rounded-md border text-[11px] font-semibold transition-colors flex items-center gap-1',
                 showEma21 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-neutral-50 text-neutral-400 border-neutral-200'
               )}
             >
@@ -147,12 +147,12 @@ export const TerminalChart: React.FC<{ className?: string }> = ({ className }) =
             Trend: <strong className={isBullish ? 'text-emerald-600' : isBearish ? 'text-rose-600' : 'text-neutral-800'}>{trendDir}</strong>
           </span>
           <span className="text-neutral-400">•</span>
-          <span className="text-neutral-500 font-mono text-[11px]">
+          <span className="text-neutral-500 text-[11px]">
             Strength: <strong>{trend?.trendStrength ?? 'NONE'}</strong>
           </span>
         </div>
 
-        <div className="flex items-center gap-3 font-mono text-[11px]">
+        <div className="flex items-center gap-3 tabular-nums text-[11px]">
           <span className="text-blue-600 font-semibold">
             EMA 9: {trend?.ema9 ? `₹${trend.ema9}` : '—'}
           </span>

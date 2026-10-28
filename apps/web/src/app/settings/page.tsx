@@ -90,7 +90,7 @@ export default function SettingsPage() {
                 max={10}
                 value={defaultLots}
                 onChange={(e) => setDefaultLots(parseInt(e.target.value) || 1)}
-                className="px-3 py-1.5 text-xs font-mono bg-white border border-neutral-300 rounded-lg w-28 text-neutral-900 focus:ring-1 focus:ring-blue-500"
+                className="px-3 py-1.5 text-xs tabular-nums font-semibold bg-white border border-neutral-300 rounded-lg w-28 text-neutral-900 focus:ring-1 focus:ring-blue-500"
               />
               <span className="text-[11px] text-neutral-400 block">
                 Must be an integer lot multiple.
@@ -101,10 +101,10 @@ export default function SettingsPage() {
           {/* Operator Profile */}
           <div className="space-y-3">
             <h4 className="font-bold text-sm text-neutral-900 tracking-tight">Operator Authentication</h4>
-            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-600 font-mono text-[11px] space-y-1">
-              <div>Role: <strong className="text-neutral-900 font-sans">Single Owner / Administrator</strong></div>
-              <div>Auth Engine: <strong className="text-neutral-900 font-sans">Supabase Auth (Server JWT)</strong></div>
-              <div>IP Status: <strong className="text-neutral-900 font-sans">VPS Whitelisted Static IP</strong></div>
+            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-600 text-xs space-y-1.5">
+              <div>Role: <strong className="text-neutral-900 font-medium">Single Owner / Administrator</strong></div>
+              <div>Auth Engine: <strong className="text-neutral-900 font-medium">Supabase Auth (Server JWT)</strong></div>
+              <div>IP Status: <strong className="text-neutral-900 font-medium">VPS Whitelisted Static IP</strong></div>
             </div>
           </div>
 

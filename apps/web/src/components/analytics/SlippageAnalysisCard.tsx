@@ -43,7 +43,7 @@ export const SlippageAnalysisCard: React.FC<SlippageAnalysisCardProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 font-mono text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 text-xs tabular-nums">
           <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/70">
             <span className="text-[10px] text-neutral-400 uppercase font-semibold block">Entry Slippage</span>
             <p className="font-bold text-base text-neutral-900 mt-1">

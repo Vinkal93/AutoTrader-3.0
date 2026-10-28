@@ -100,7 +100,7 @@ export const EquityDrawdownChart: React.FC<EquityDrawdownChartProps> = ({
             <h3 className="font-bold text-sm text-neutral-900 tracking-tight">
               {viewMode === 'EQUITY' ? 'Cumulative Equity Progression' : 'Daily Realized P&L Distribution'}
             </h3>
-            <span className="text-[10px] font-mono text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] tabular-nums font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
               {equityPoints.length} updates
             </span>
           </div>
@@ -183,14 +183,14 @@ export const EquityDrawdownChart: React.FC<EquityDrawdownChartProps> = ({
             )}
 
             {/* Y-Axis Labels */}
-            <text x={padding.left - 8} y={getY(maxEquity) + 4} textAnchor="end" className="text-[10px] fill-neutral-400 font-mono">
+            <text x={padding.left - 8} y={getY(maxEquity) + 4} textAnchor="end" className="text-[10px] fill-neutral-500 tabular-nums">
               {formatCurrency(maxEquity)}
             </text>
-            <text x={padding.left - 8} y={zeroY + 4} textAnchor="end" className="text-[10px] fill-neutral-400 font-mono">
+            <text x={padding.left - 8} y={zeroY + 4} textAnchor="end" className="text-[10px] fill-neutral-500 tabular-nums">
               ₹0.00
             </text>
             {minEquity < 0 && (
-              <text x={padding.left - 8} y={getY(minEquity) + 4} textAnchor="end" className="text-[10px] fill-rose-500 font-mono">
+              <text x={padding.left - 8} y={getY(minEquity) + 4} textAnchor="end" className="text-[10px] fill-rose-500 tabular-nums font-semibold">
                 {formatCurrency(minEquity)}
               </text>
             )}
@@ -209,7 +209,7 @@ export const EquityDrawdownChart: React.FC<EquityDrawdownChartProps> = ({
             ))}
           </svg>
 
-          <div className="flex items-center justify-between text-[11px] text-neutral-400 font-mono mt-2 px-2">
+          <div className="flex items-center justify-between text-[11px] text-neutral-500 mt-2 px-2 font-medium">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 bg-blue-600 inline-block" /> Net Realized Equity
             </span>
@@ -228,7 +228,7 @@ export const EquityDrawdownChart: React.FC<EquityDrawdownChartProps> = ({
               <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                 {/* Tooltip on hover */}
                 <div className="absolute -top-14 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
-                  <div className="bg-neutral-900 text-white rounded-lg px-2.5 py-1 text-[10px] font-mono whitespace-nowrap shadow-md">
+                  <div className="bg-neutral-900 text-white rounded-lg px-2.5 py-1 text-[10px] tabular-nums whitespace-nowrap shadow-md">
                     <p className="font-bold">{d.date}</p>
                     <p className={isPos ? 'text-emerald-400' : 'text-rose-400'}>
                       Net: {formatCurrency(d.netPnl)} ({d.tradesCount} trades)
@@ -245,7 +245,7 @@ export const EquityDrawdownChart: React.FC<EquityDrawdownChartProps> = ({
                       : 'bg-rose-500 group-hover:bg-rose-600'
                   }`}
                 />
-                <span className="text-[10px] font-mono text-neutral-400 mt-2 truncate w-full text-center">
+                <span className="text-[10px] tabular-nums text-neutral-500 mt-2 truncate w-full text-center">
                   {d.date.slice(5)}
                 </span>
               </div>

@@ -116,7 +116,7 @@ export const PerformanceCharts: React.FC<{ className?: string }> = ({ className 
 
                 return (
                   <div key={entry.date} className="flex flex-col items-center gap-1 group">
-                    <span className="text-[10px] font-mono text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] tabular-nums text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
                       {isPositive ? '+' : ''}₹{entry.netPnl.toFixed(0)}
                     </span>
                     <div
@@ -126,7 +126,7 @@ export const PerformanceCharts: React.FC<{ className?: string }> = ({ className 
                         isPositive ? 'bg-emerald-500' : 'bg-red-500'
                       )}
                     />
-                    <span className="text-[10px] font-mono text-neutral-500 mt-1">
+                    <span className="text-[10px] tabular-nums text-neutral-500 mt-1">
                       {entry.date.slice(5)}
                     </span>
                   </div>
@@ -160,25 +160,25 @@ export const PerformanceCharts: React.FC<{ className?: string }> = ({ className 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 mt-4 border-t border-neutral-100 text-xs">
         <div className="flex flex-col">
           <span className="text-neutral-400 font-medium">Win / Loss Ratio</span>
-          <span className="font-bold text-neutral-800 font-mono">
+          <span className="font-bold text-neutral-800 tabular-nums">
             {perf?.winningTrades ?? 0}W / {perf?.losingTrades ?? 0}L ({perf?.breakevenTrades ?? 0}BE)
           </span>
         </div>
         <div className="flex flex-col">
           <span className="text-neutral-400 font-medium">Profit Factor</span>
-          <span className="font-bold text-neutral-800 font-mono">
+          <span className="font-bold text-neutral-800 tabular-nums">
             {perf?.profitFactor !== null && perf?.profitFactor !== undefined ? perf.profitFactor.toFixed(2) : '—'}
           </span>
         </div>
         <div className="flex flex-col">
           <span className="text-neutral-400 font-medium">Period Net P&L</span>
-          <span className={cn('font-bold font-mono', (parseFloat(perf?.netPnl ?? '0') >= 0 ? 'text-emerald-600' : 'text-red-600'))}>
+          <span className={cn('font-bold tabular-nums', (parseFloat(perf?.netPnl ?? '0') >= 0 ? 'text-emerald-600' : 'text-red-600'))}>
             {formatCurrency(perf?.netPnl ?? '0.00')}
           </span>
         </div>
         <div className="flex flex-col">
           <span className="text-neutral-400 font-medium">Max Drawdown</span>
-          <span className="font-bold text-neutral-800 font-mono">
+          <span className="font-bold text-neutral-800 tabular-nums">
             {perf?.maxDrawdown ? formatCurrency(perf.maxDrawdown) : '₹0.00'}
           </span>
         </div>

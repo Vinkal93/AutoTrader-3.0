@@ -185,7 +185,7 @@ export default function StrategyEnginePage() {
               <h3 className="font-bold text-base text-neutral-900 tracking-tight">
                 {strategy?.name ?? 'NIFTY 12:20 Rule-Based Directional Buyer'}
               </h3>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase">
+              <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase">
                 Active Strategy
               </span>
             </div>
@@ -197,7 +197,7 @@ export default function StrategyEnginePage() {
 
         {/* Schedule & Countdown Pill */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-mono">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs tabular-nums font-medium">
             <Clock className="w-3.5 h-3.5 text-neutral-500" />
             <span>Next Run: <strong>{schedule?.nextRunIST ?? 'Today 12:20:00 IST'}</strong></span>
             {schedule && schedule.timeRemainingSeconds > 0 && (
@@ -225,14 +225,14 @@ export default function StrategyEnginePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-blue-900">Evaluation Decision: {evalResult.decision}</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-bold">
+              <span className="text-[10px] tabular-nums px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-bold">
                 {evalResult.tradeDate}
               </span>
             </div>
             <p className="text-blue-800">{evalResult.reason}</p>
             {evalResult.selectedContract && (
-              <div className="font-mono text-[11px] pt-1 text-blue-900 font-semibold">
-                Selected Contract: {evalResult.selectedContract.tradingSymbol} (Ask: ₹{evalResult.selectedContract.askPrice})
+              <div className="text-[11px] pt-1 text-blue-900 font-medium tabular-nums">
+                Selected Contract: <span className="font-mono font-semibold">{evalResult.selectedContract.tradingSymbol}</span> (Ask: ₹{evalResult.selectedContract.askPrice})
               </div>
             )}
           </div>
@@ -323,7 +323,7 @@ export default function StrategyEnginePage() {
                     type="text"
                     disabled
                     value="NIFTY 50 (Options)"
-                    className="mt-1 w-full p-2 bg-neutral-100 border border-neutral-200 rounded-xl font-mono text-neutral-700 cursor-not-allowed"
+                    className="mt-1 w-full p-2 bg-neutral-100 border border-neutral-200 rounded-xl tabular-nums text-neutral-700 cursor-not-allowed"
                   />
                 </div>
 
@@ -333,7 +333,7 @@ export default function StrategyEnginePage() {
                     type="text"
                     value={entryTimeIST}
                     onChange={(e) => setEntryTimeIST(e.target.value)}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                   />
                   <span className="text-[10px] text-neutral-400 mt-0.5 block">Format: HH:mm (Asia/Kolkata)</span>
                 </div>
@@ -345,7 +345,7 @@ export default function StrategyEnginePage() {
                       type="text"
                       disabled
                       value="5m (Canonical)"
-                      className="mt-1 w-full p-2 bg-neutral-100 border border-neutral-200 rounded-xl font-mono text-neutral-700 cursor-not-allowed"
+                      className="mt-1 w-full p-2 bg-neutral-100 border border-neutral-200 rounded-xl tabular-nums text-neutral-700 cursor-not-allowed"
                     />
                   </div>
                   <div>
@@ -354,7 +354,7 @@ export default function StrategyEnginePage() {
                       type="number"
                       value={maxTradesPerDay}
                       onChange={(e) => setMaxTradesPerDay(Number(e.target.value))}
-                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -385,7 +385,7 @@ export default function StrategyEnginePage() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-neutral-600 font-medium block">Min Executable Ask</label>
-                    <div className="flex items-center gap-1 font-mono mt-1">
+                    <div className="flex items-center gap-1 tabular-nums mt-1">
                       <span>₹</span>
                       <input
                         type="text"
@@ -397,7 +397,7 @@ export default function StrategyEnginePage() {
                   </div>
                   <div>
                     <label className="text-neutral-600 font-medium block">Max Executable Ask</label>
-                    <div className="flex items-center gap-1 font-mono mt-1">
+                    <div className="flex items-center gap-1 tabular-nums mt-1">
                       <span>₹</span>
                       <input
                         type="text"
@@ -412,7 +412,7 @@ export default function StrategyEnginePage() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-neutral-600 font-medium block">Target Premium Move</label>
-                    <div className="flex items-center gap-1 font-mono mt-1">
+                    <div className="flex items-center gap-1 tabular-nums mt-1">
                       <span>+₹</span>
                       <input
                         type="text"
@@ -424,7 +424,7 @@ export default function StrategyEnginePage() {
                   </div>
                   <div>
                     <label className="text-neutral-600 font-medium block">Initial Stop Loss</label>
-                    <div className="flex items-center gap-1 font-mono mt-1">
+                    <div className="flex items-center gap-1 tabular-nums mt-1">
                       <span>-₹</span>
                       <input
                         type="text"
@@ -443,7 +443,7 @@ export default function StrategyEnginePage() {
                       type="text"
                       value={maxSpread}
                       onChange={(e) => setMaxSpread(e.target.value)}
-                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                   <div>
@@ -452,7 +452,7 @@ export default function StrategyEnginePage() {
                       type="number"
                       value={minLiquidity}
                       onChange={(e) => setMinLiquidity(Number(e.target.value))}
-                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -463,7 +463,7 @@ export default function StrategyEnginePage() {
                     type="number"
                     value={lotCount}
                     onChange={(e) => setLotCount(Number(e.target.value))}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                   />
                   <span className="text-[10px] text-neutral-400 mt-0.5 block">1 Lot = 25 Quantities (NIFTY)</span>
                 </div>
@@ -485,7 +485,7 @@ export default function StrategyEnginePage() {
                     placeholder="e.g. 500.00"
                     value={maxRiskPerTrade}
                     onChange={(e) => setMaxRiskPerTrade(e.target.value)}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -496,7 +496,7 @@ export default function StrategyEnginePage() {
                     placeholder="e.g. 1500.00"
                     value={maxDailyLoss}
                     onChange={(e) => setMaxDailyLoss(e.target.value)}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -507,7 +507,7 @@ export default function StrategyEnginePage() {
                     placeholder="e.g. 10000.00"
                     value={minTradingFunds}
                     onChange={(e) => setMinTradingFunds(e.target.value)}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
@@ -517,7 +517,7 @@ export default function StrategyEnginePage() {
                     type="text"
                     value={timeBasedExitIST}
                     onChange={(e) => setTimeBasedExitIST(e.target.value)}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl font-mono focus:ring-1 focus:ring-blue-500"
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
                   />
                   <span className="text-[10px] text-neutral-400 mt-0.5 block">Hard intraday exit: 15:15 IST</span>
                 </div>
@@ -550,7 +550,7 @@ export default function StrategyEnginePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
               <span className="text-xs font-semibold text-neutral-500">Market Trading Day?</span>
-              <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+              <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
                 {schedule?.isTradingDay ? 'YES (Active Day)' : 'NO (Non-Trading)'}
               </p>
               <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -560,7 +560,7 @@ export default function StrategyEnginePage() {
 
             <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
               <span className="text-xs font-semibold text-neutral-500">Next Evaluation Target</span>
-              <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+              <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
                 {schedule?.nextRunIST ? schedule.nextRunIST.slice(11, 16) + ' IST' : '12:20 IST'}
               </p>
               <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -570,7 +570,7 @@ export default function StrategyEnginePage() {
 
             <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
               <span className="text-xs font-semibold text-neutral-500">Already Run Today?</span>
-              <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+              <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
                 {schedule?.alreadyRunToday ? 'YES (Executed)' : 'NO (Pending)'}
               </p>
               <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -580,7 +580,7 @@ export default function StrategyEnginePage() {
 
             <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
               <span className="text-xs font-semibold text-neutral-500">Exchange Hours State</span>
-              <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+              <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
                 {schedule?.isMarketOpen ? 'OPEN (09:15-15:30)' : 'CLOSED'}
               </p>
               <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -602,7 +602,7 @@ export default function StrategyEnginePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
                 <tr>
                   <th className="py-2.5 px-3">Version</th>
@@ -616,23 +616,23 @@ export default function StrategyEnginePage() {
               <tbody className="divide-y divide-neutral-100 text-neutral-800">
                 {!versions || versions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-neutral-400 font-sans text-xs">
+                    <td colSpan={6} className="py-6 text-center text-neutral-400 text-xs">
                       No version history found.
                     </td>
                   </tr>
                 ) : (
                   versions.map((ver) => (
                     <tr key={ver.id} className="hover:bg-neutral-50 transition-colors">
-                      <td className="py-3 px-3 font-bold text-blue-600">v{ver.versionNumber}</td>
-                      <td className="py-3 px-3 text-neutral-500 font-sans text-[11px]">
+                      <td className="py-3 px-3 font-bold text-blue-600 tabular-nums">v{ver.versionNumber}</td>
+                      <td className="py-3 px-3 text-neutral-500 tabular-nums text-[11px]">
                         {formatISTDateTime(ver.createdAt)}
                       </td>
-                      <td className="py-3 px-3 font-sans text-[11px]">{ver.createdBy ?? 'system'}</td>
-                      <td className="py-3 px-3">₹{ver.config.premiumMin} - ₹{ver.config.premiumMax}</td>
-                      <td className="py-3 px-3 text-neutral-600">
+                      <td className="py-3 px-3 text-[11px]">{ver.createdBy ?? 'system'}</td>
+                      <td className="py-3 px-3 tabular-nums font-semibold">₹{ver.config.premiumMin} - ₹{ver.config.premiumMax}</td>
+                      <td className="py-3 px-3 text-neutral-600 tabular-nums font-semibold">
                         +₹{ver.config.targetPremiumMove} / -₹{ver.config.initialStopLoss}
                       </td>
-                      <td className="py-3 px-3 font-sans text-neutral-600 max-w-sm truncate">
+                      <td className="py-3 px-3 text-neutral-600 max-w-sm truncate">
                         {ver.changeReason ?? 'Standard update'}
                       </td>
                     </tr>
@@ -655,7 +655,7 @@ export default function StrategyEnginePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs font-mono">
+            <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
                 <tr>
                   <th className="py-2.5 px-3">Trade Date</th>
@@ -668,18 +668,18 @@ export default function StrategyEnginePage() {
               <tbody className="divide-y divide-neutral-100 text-neutral-800">
                 {!runs || runs.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-neutral-400 font-sans text-xs">
+                    <td colSpan={5} className="py-6 text-center text-neutral-400 text-xs">
                       No decision runs recorded yet. Runs execute automatically at 12:20 PM IST.
                     </td>
                   </tr>
                 ) : (
                   runs.map((r) => (
                     <tr key={r.id} className="hover:bg-neutral-50 transition-colors">
-                      <td className="py-3 px-3 font-bold">{r.tradeDate}</td>
+                      <td className="py-3 px-3 font-bold tabular-nums">{r.tradeDate}</td>
                       <td className="py-3 px-3">
                         <span
                           className={cn(
-                            'text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border',
+                            'text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border tracking-wider',
                             r.decision === 'ENTER_CE'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'
                               : r.decision === 'ENTER_PE'
@@ -690,13 +690,13 @@ export default function StrategyEnginePage() {
                           {r.decision}
                         </span>
                       </td>
-                      <td className="py-3 px-3 font-bold text-neutral-900">
+                      <td className="py-3 px-3 font-semibold text-neutral-900 font-mono text-[11px]">
                         {r.selectedContract ? r.selectedContract.tradingSymbol : '—'}
                       </td>
-                      <td className="py-3 px-3 text-neutral-500 font-sans text-[11px]">
+                      <td className="py-3 px-3 text-neutral-500 tabular-nums text-[11px]">
                         {formatISTDateTime(r.evaluatedAt)}
                       </td>
-                      <td className="py-3 px-3 font-sans text-neutral-600 max-w-md truncate">
+                      <td className="py-3 px-3 text-neutral-600 max-w-md truncate">
                         {r.reason}
                       </td>
                     </tr>
@@ -742,25 +742,25 @@ export default function StrategyEnginePage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                   <span className="text-neutral-400 font-medium">Evaluated Days</span>
-                  <p className="font-mono text-base font-bold text-neutral-900 mt-0.5">
+                  <p className="tabular-nums text-base font-bold text-neutral-900 mt-0.5">
                     {backtestResult.evaluatedDays} Days
                   </p>
                 </div>
                 <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                   <span className="text-neutral-400 font-medium">Trade Signals</span>
-                  <p className="font-mono text-base font-bold text-neutral-900 mt-0.5">
+                  <p className="tabular-nums text-base font-bold text-neutral-900 mt-0.5">
                     {backtestResult.tradeSignals} ({backtestResult.ceSignals} CE / {backtestResult.peSignals} PE)
                   </p>
                 </div>
                 <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                   <span className="text-neutral-400 font-medium">Skipped (Sideways)</span>
-                  <p className="font-mono text-base font-bold text-neutral-900 mt-0.5">
+                  <p className="tabular-nums text-base font-bold text-neutral-900 mt-0.5">
                     {backtestResult.skippedDays} Days
                   </p>
                 </div>
                 <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                   <span className="text-neutral-400 font-medium">Est. Net Outcome</span>
-                  <p className={cn('font-mono text-base font-bold mt-0.5', backtestResult.totalEstimatedNetPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                  <p className={cn('tabular-nums text-base font-bold mt-0.5', backtestResult.totalEstimatedNetPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                     ₹{backtestResult.totalEstimatedNetPnl.toFixed(2)}
                   </p>
                 </div>
@@ -768,7 +768,7 @@ export default function StrategyEnginePage() {
 
               {/* Signal Log Table */}
               <div className="overflow-x-auto max-h-56 overflow-y-auto">
-                <table className="w-full text-left border-collapse text-[11px] font-mono">
+                <table className="w-full text-left border-collapse text-[11px]">
                   <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200 sticky top-0">
                     <tr>
                       <th className="py-2 px-3">Date</th>
@@ -783,12 +783,12 @@ export default function StrategyEnginePage() {
                   <tbody className="divide-y divide-neutral-100 text-neutral-800">
                     {backtestResult.signalLog.map((log: any, i: number) => (
                       <tr key={`log-${i}`} className="hover:bg-neutral-50">
-                        <td className="py-2 px-3 font-bold">{log.date}</td>
-                        <td className="py-2 px-3 text-neutral-500">{log.timeIST}</td>
+                        <td className="py-2 px-3 font-bold tabular-nums">{log.date}</td>
+                        <td className="py-2 px-3 text-neutral-500 tabular-nums">{log.timeIST}</td>
                         <td className="py-2 px-3 font-bold">
                           <span
                             className={cn(
-                              'px-1.5 py-0.2 rounded font-bold uppercase text-[10px]',
+                              'px-1.5 py-0.2 rounded font-bold uppercase text-[10px] tracking-wider',
                               log.signal === 'BUY_CE'
                                 ? 'bg-blue-50 text-blue-700'
                                 : log.signal === 'BUY_PE'
@@ -799,10 +799,10 @@ export default function StrategyEnginePage() {
                             {log.signal}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-right">₹{log.spotPrice.toFixed(2)}</td>
-                        <td className="py-2 px-3 text-right text-blue-600">₹{log.ema9.toFixed(2)}</td>
-                        <td className="py-2 px-3 text-right text-amber-600">₹{log.ema21.toFixed(2)}</td>
-                        <td className="py-2 px-3 font-sans text-neutral-500 truncate max-w-xs">{log.reason}</td>
+                        <td className="py-2 px-3 text-right tabular-nums font-semibold">₹{log.spotPrice.toFixed(2)}</td>
+                        <td className="py-2 px-3 text-right text-blue-600 tabular-nums font-semibold">₹{log.ema9.toFixed(2)}</td>
+                        <td className="py-2 px-3 text-right text-amber-600 tabular-nums font-semibold">₹{log.ema21.toFixed(2)}</td>
+                        <td className="py-2 px-3 text-neutral-500 truncate max-w-xs">{log.reason}</td>
                       </tr>
                     ))}
                   </tbody>

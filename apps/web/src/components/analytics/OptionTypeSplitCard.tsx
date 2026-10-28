@@ -52,9 +52,9 @@ export const OptionTypeSplitCard: React.FC<OptionTypeSplitCardProps> = ({
           </div>
 
           <div className="mt-3">
-            <span className="text-[11px] text-neutral-400 font-semibold uppercase">Net Realized P&L</span>
+            <span className="text-[11px] text-neutral-500 font-semibold uppercase">Net Realized P&L</span>
             <p
-              className={`font-mono text-2xl font-bold mt-0.5 ${
+              className={`tabular-nums text-2xl font-bold mt-0.5 tracking-tight ${
                 isPos ? 'text-emerald-600' : isNeg ? 'text-rose-600' : 'text-neutral-900'
               }`}
             >
@@ -63,7 +63,7 @@ export const OptionTypeSplitCard: React.FC<OptionTypeSplitCardProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-neutral-200/60 text-xs font-mono">
+        <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-neutral-200/60 text-xs tabular-nums">
           <div>
             <span className="text-neutral-400 text-[10px] block">Win Rate</span>
             <span className="font-bold text-neutral-900">

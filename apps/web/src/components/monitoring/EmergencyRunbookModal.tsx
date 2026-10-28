@@ -65,14 +65,14 @@ export const EmergencyRunbookModal: React.FC<EmergencyRunbookModalProps> = ({
               key={step.stepNumber}
               className="p-4 rounded-xl border border-neutral-200/90 bg-neutral-50/60 flex items-start gap-3.5"
             >
-              <div className="w-7 h-7 rounded-lg bg-neutral-900 text-white flex items-center justify-center text-xs font-bold font-mono shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-neutral-900 text-white flex items-center justify-center text-xs font-bold tabular-nums shrink-0">
                 {step.stepNumber}
               </div>
 
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <h4 className="font-bold text-sm text-neutral-900">{step.title}</h4>
-                  <span className="text-[11px] font-mono text-neutral-400 bg-white px-2 py-0.5 rounded border border-neutral-200">
+                  <span className="text-[11px] font-medium text-neutral-500 bg-white px-2 py-0.5 rounded border border-neutral-200">
                     {step.toolOrLocation}
                   </span>
                 </div>

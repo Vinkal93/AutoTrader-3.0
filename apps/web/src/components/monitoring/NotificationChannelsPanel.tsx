@@ -49,7 +49,7 @@ export const NotificationChannelsPanel: React.FC<NotificationChannelsPanelProps>
             {channels.map((ch) => (
               <div
                 key={ch.id}
-                className="p-3 rounded-xl border border-neutral-200/80 bg-neutral-50 flex items-center justify-between text-xs font-mono"
+                className="p-3 rounded-xl border border-neutral-200/80 bg-neutral-50 flex items-center justify-between text-xs"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-6 h-6 rounded-md bg-white border border-neutral-200 flex items-center justify-center text-neutral-600">
@@ -61,7 +61,7 @@ export const NotificationChannelsPanel: React.FC<NotificationChannelsPanelProps>
                   </div>
                   <div>
                     <span className="font-bold text-neutral-900 block">{ch.name}</span>
-                    <span className="text-[10px] text-neutral-400 truncate max-w-[200px] block">
+                    <span className="text-[10px] text-neutral-400 font-mono truncate max-w-[200px] block">
                       {ch.destination}
                     </span>
                   </div>
@@ -69,7 +69,7 @@ export const NotificationChannelsPanel: React.FC<NotificationChannelsPanelProps>
 
                 <div className="text-right">
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                       ch.isEnabled
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-neutral-200 text-neutral-600'
@@ -105,13 +105,13 @@ export const NotificationChannelsPanel: React.FC<NotificationChannelsPanelProps>
                 return (
                   <div
                     key={log.id}
-                    className="p-2.5 rounded-xl border border-neutral-100 bg-neutral-50/60 flex items-center justify-between text-[11px] font-mono"
+                    className="p-2.5 rounded-xl border border-neutral-100 bg-neutral-50/60 flex items-center justify-between text-[11px]"
                   >
                     <div>
                       <span className="font-bold text-neutral-800 block">
-                        {log.channelType} ({log.destination})
+                        {log.channelType} (<span className="font-mono text-[10px] text-neutral-600">{log.destination}</span>)
                       </span>
-                      <span className="text-[10px] text-neutral-400">
+                      <span className="text-[10px] text-neutral-400 tabular-nums">
                         {formatISTDateTime(log.deliveredAt)}
                       </span>
                     </div>

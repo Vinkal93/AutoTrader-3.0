@@ -91,7 +91,7 @@ export const SystemActivityFeed: React.FC<{ className?: string }> = ({ className
                   <span className="font-semibold text-xs text-neutral-800 tracking-tight">
                     {evt.category}
                   </span>
-                  <span className="text-[10px] text-neutral-400 font-mono shrink-0">
+                  <span className="text-[10px] text-neutral-400 tabular-nums shrink-0">
                     {formatISTDateTime(evt.timestamp)}
                   </span>
                 </div>

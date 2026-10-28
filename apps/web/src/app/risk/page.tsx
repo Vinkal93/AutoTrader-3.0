@@ -48,7 +48,7 @@ export default function RiskPage() {
             </p>
           </div>
         </div>
-        <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-white border shadow-2xs">
+        <span className="text-xs font-bold tracking-wider uppercase px-2.5 py-1 rounded-md bg-white border shadow-2xs">
           {isRiskLocked ? 'LOCKED' : 'NOMINAL'}
         </span>
       </div>
@@ -57,7 +57,7 @@ export default function RiskPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
           <span className="text-xs font-semibold text-neutral-500">Configured Daily Loss Limit</span>
-          <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+          <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
             {risk?.dailyLossLimit ? formatCurrency(risk.dailyLossLimit) : 'Unconfigured'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -67,7 +67,7 @@ export default function RiskPage() {
 
         <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
           <span className="text-xs font-semibold text-neutral-500">Realized Loss Today</span>
-          <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+          <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
             {formatCurrency(risk?.realizedLossToday ?? '0.00')}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -77,7 +77,7 @@ export default function RiskPage() {
 
         <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
           <span className="text-xs font-semibold text-neutral-500">Remaining Daily Loss Cushion</span>
-          <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+          <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
             {risk?.remainingDailyAllowance ? formatCurrency(risk.remainingDailyAllowance) : '—'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">
@@ -87,7 +87,7 @@ export default function RiskPage() {
 
         <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs">
           <span className="text-xs font-semibold text-neutral-500">Max Permitted Risk Per Trade</span>
-          <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+          <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
             {risk?.maxRiskPerTrade ? formatCurrency(risk.maxRiskPerTrade) : 'Unconfigured'}
           </p>
           <span className="text-[11px] text-neutral-400 font-sans mt-2 block">

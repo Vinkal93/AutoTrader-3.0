@@ -64,7 +64,7 @@ export const IncidentManagementStream: React.FC<IncidentManagementStreamProps> =
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm text-neutral-900 tracking-tight">System Incident Management Stream</h3>
-            <span className="text-[10px] font-mono text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] tabular-nums font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
               {filtered.length} incidents
             </span>
           </div>
@@ -82,7 +82,7 @@ export const IncidentManagementStream: React.FC<IncidentManagementStreamProps> =
               placeholder="Search incidents..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1 text-xs font-mono bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:border-blue-500 w-40"
+              className="pl-8 pr-3 py-1 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:border-blue-500 w-40"
             />
           </div>
 
@@ -167,7 +167,7 @@ export const IncidentManagementStream: React.FC<IncidentManagementStreamProps> =
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-xs text-neutral-900">{inc.title}</span>
                       <span
-                        className={`px-1.5 py-0.2 rounded text-[10px] font-bold font-mono uppercase ${
+                        className={`px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider ${
                           isCrit
                             ? 'bg-rose-50 text-rose-700 border border-rose-200'
                             : isWarn
@@ -178,7 +178,7 @@ export const IncidentManagementStream: React.FC<IncidentManagementStreamProps> =
                         {inc.severity}
                       </span>
                       <span
-                        className={`px-1.5 py-0.2 rounded text-[10px] font-bold font-mono uppercase ${
+                        className={`px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider ${
                           isActive
                             ? 'bg-rose-600 text-white'
                             : isAck
@@ -190,10 +190,10 @@ export const IncidentManagementStream: React.FC<IncidentManagementStreamProps> =
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-[11px] text-neutral-400 font-mono mt-1">
-                      <span>Type: {inc.incidentType}</span>
+                    <div className="flex items-center gap-3 text-[11px] text-neutral-500 mt-1">
+                      <span>Type: <code className="font-mono text-[10px] bg-neutral-100 px-1 py-0.5 rounded text-neutral-700">{inc.incidentType}</code></span>
                       <span>•</span>
-                      <span>Triggered: {formatISTDateTime(inc.triggeredAt)}</span>
+                      <span className="tabular-nums">Triggered: {formatISTDateTime(inc.triggeredAt)}</span>
                     </div>
 
                     {inc.details && Object.keys(inc.details).length > 0 && (
@@ -231,7 +231,7 @@ export const IncidentManagementStream: React.FC<IncidentManagementStreamProps> =
                             placeholder="Resolution notes..."
                             value={resolveNotes}
                             onChange={(e) => setResolveNotes(e.target.value)}
-                            className="px-2 py-0.5 text-xs font-mono bg-white border border-neutral-200 rounded focus:outline-none focus:border-blue-500 w-40"
+                            className="px-2 py-0.5 text-xs bg-white border border-neutral-200 rounded focus:outline-none focus:border-blue-500 w-40"
                           />
                           <button
                             type="button"

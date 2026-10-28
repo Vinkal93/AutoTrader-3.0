@@ -85,10 +85,10 @@ export const Topbar: React.FC = () => {
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-neutral-900 tracking-tight">NIFTY 50</span>
-              <span className="text-[10px] text-neutral-400 font-mono hidden sm:inline">SPOT</span>
+              <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider hidden sm:inline">SPOT</span>
             </div>
             {quote ? (
-              <div className="flex items-center gap-1.5 text-xs font-semibold font-mono">
+              <div className="flex items-center gap-1.5 text-xs font-semibold tabular-nums">
                 <span className="text-neutral-900">{formatCurrency(quote.lastPrice)}</span>
                 <span
                   className={cn(
@@ -106,7 +106,7 @@ export const Topbar: React.FC = () => {
                 </span>
               </div>
             ) : (
-              <span className="text-xs text-neutral-400 font-mono">— Unavailable</span>
+              <span className="text-xs text-neutral-400 font-medium">— Unavailable</span>
             )}
           </div>
         </div>
@@ -221,7 +221,7 @@ export const Topbar: React.FC = () => {
           </div>
           <div className="hidden 2xl:flex flex-col">
             <span className="text-xs font-semibold text-neutral-900 leading-none">Trader</span>
-            <span className="text-[10px] text-neutral-400 font-mono">Owner</span>
+            <span className="text-[10px] text-neutral-400 font-medium">Owner</span>
           </div>
         </div>
       </div>

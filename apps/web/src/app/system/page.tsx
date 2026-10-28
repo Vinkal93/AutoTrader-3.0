@@ -99,9 +99,9 @@ export default function SystemPage() {
             />
           </div>
           <div className="text-sm font-semibold text-neutral-800">
-            Latency: <span className="font-mono">{checks.database.latencyMs ?? '—'} ms</span>
+            Latency: <span className="tabular-nums font-semibold">{checks.database.latencyMs ?? '—'} ms</span>
           </div>
-          <div className="text-[11px] text-neutral-400 font-mono">
+          <div className="text-[11px] text-neutral-400 tabular-nums">
             Checked: {formatISTDateTime(checks.database.lastCheckedAt, { timeOnly: true })}
           </div>
         </div>
@@ -119,9 +119,9 @@ export default function SystemPage() {
             />
           </div>
           <div className="text-sm font-semibold text-neutral-800">
-            Latency: <span className="font-mono">{checks.broker.latencyMs ?? '—'} ms</span>
+            Latency: <span className="tabular-nums font-semibold">{checks.broker.latencyMs ?? '—'} ms</span>
           </div>
-          <div className="text-[11px] text-neutral-400 font-mono">
+          <div className="text-[11px] text-neutral-400 tabular-nums">
             Checked: {formatISTDateTime(checks.broker.lastCheckedAt, { timeOnly: true })}
           </div>
         </div>
@@ -139,9 +139,9 @@ export default function SystemPage() {
             />
           </div>
           <div className="text-sm font-semibold text-neutral-800">
-            Heartbeat: <span className="font-mono">{status?.workerHeartbeat ? formatISTDateTime(status.workerHeartbeat, { timeOnly: true }) : '—'}</span>
+            Heartbeat: <span className="tabular-nums font-semibold">{status?.workerHeartbeat ? formatISTDateTime(status.workerHeartbeat, { timeOnly: true }) : '—'}</span>
           </div>
-          <div className="text-[11px] text-neutral-400 font-mono">
+          <div className="text-[11px] text-neutral-400 tabular-nums">
             Checked: {formatISTDateTime(checks.worker.lastCheckedAt, { timeOnly: true })}
           </div>
         </div>
@@ -159,9 +159,9 @@ export default function SystemPage() {
             />
           </div>
           <div className="text-sm font-semibold text-neutral-800">
-            Uptime: <span className="font-mono">{formatUptime(health?.uptime)}</span>
+            Uptime: <span className="tabular-nums font-semibold">{formatUptime(health?.uptime)}</span>
           </div>
-          <div className="text-[11px] text-neutral-400 font-mono">
+          <div className="text-[11px] text-neutral-400 tabular-nums">
             Release: v{health?.version ?? '3.0.0'}
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function SystemPage() {
               </p>
             </div>
           </div>
-          <span className="text-xs font-mono text-neutral-400 shrink-0">
+          <span className="text-xs tabular-nums text-neutral-400 shrink-0">
             {formatISTDateTime(status.lastStateChange.timestamp)}
           </span>
         </div>
@@ -223,7 +223,7 @@ export default function SystemPage() {
 
         {/* Events List */}
         {filteredEvents.length > 0 ? (
-          <div className="divide-y divide-neutral-100 font-mono text-xs">
+          <div className="divide-y divide-neutral-100 text-xs">
             {filteredEvents.map((evt: SystemEvent) => {
               const sevBadge = {
                 CRITICAL: 'bg-rose-100 text-rose-800 border-rose-200',
@@ -247,7 +247,7 @@ export default function SystemPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-neutral-400 text-[11px] shrink-0 font-mono self-end sm:self-auto">
+                  <span className="text-neutral-400 text-[11px] shrink-0 tabular-nums self-end sm:self-auto">
                     {formatISTDateTime(evt.timestamp)}
                   </span>
                 </div>

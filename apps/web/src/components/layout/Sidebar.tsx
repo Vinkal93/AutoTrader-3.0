@@ -76,7 +76,7 @@ export const Sidebar: React.FC = () => {
                 <span className="font-bold text-sm tracking-tight text-neutral-900">
                   AutoTrader <span className="text-blue-600 font-semibold">3.0</span>
                 </span>
-                <span className="text-[10px] text-neutral-500 font-mono tracking-wider font-medium uppercase">
+                <span className="text-[10px] text-neutral-500 tracking-wider font-semibold uppercase">
                   NIFTY Algorithmic
                 </span>
               </div>

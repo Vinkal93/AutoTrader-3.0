@@ -43,7 +43,7 @@ export const TradeDrilldownModal: React.FC<TradeDrilldownModalProps> = ({ trade,
               {trade.optionType ?? 'NIFTY'}
             </span>
             <div>
-              <h3 className="font-bold text-sm text-neutral-900 tracking-tight font-mono">
+              <h3 className="font-bold text-sm text-neutral-900 tracking-tight">
                 {trade.tradingSymbol}
               </h3>
               <p className="text-[11px] text-neutral-400 font-mono">ID: {trade.id}</p>
@@ -63,7 +63,7 @@ export const TradeDrilldownModal: React.FC<TradeDrilldownModalProps> = ({ trade,
         <div className="p-5 space-y-4">
           {/* Realized Outcome Banner */}
           <div
-            className={`p-4 rounded-xl border flex items-center justify-between font-mono ${
+            className={`p-4 rounded-xl border flex items-center justify-between tabular-nums ${
               isPos
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                 : isNeg
@@ -72,7 +72,7 @@ export const TradeDrilldownModal: React.FC<TradeDrilldownModalProps> = ({ trade,
             }`}
           >
             <div>
-              <span className="text-[10px] font-semibold uppercase opacity-70 block">Net Realized Outcome</span>
+              <span className="text-[10px] font-semibold uppercase opacity-70 block font-sans">Net Realized Outcome</span>
               <span className="text-2xl font-bold tracking-tight">{formatCurrency(trade.netPnl)}</span>
             </div>
             <div className="text-right text-xs">
@@ -82,41 +82,41 @@ export const TradeDrilldownModal: React.FC<TradeDrilldownModalProps> = ({ trade,
           </div>
 
           {/* Pricing & Execution Details */}
-          <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+          <div className="grid grid-cols-2 gap-3 text-xs tabular-nums">
             <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/70">
-              <span className="text-[10px] text-neutral-400 uppercase font-semibold block">Entry Leg</span>
+              <span className="text-[10px] text-neutral-500 uppercase font-semibold block font-sans">Entry Leg</span>
               <p className="font-bold text-neutral-900 text-sm mt-0.5">
                 {formatCurrency(trade.entryFilledPrice || trade.entryPrice)}
               </p>
-              <span className="text-[10px] text-neutral-400 block mt-0.5">
+              <span className="text-[10px] text-neutral-400 block mt-0.5 font-sans">
                 Req: {formatCurrency(trade.entryPrice)} (Slip: {trade.entrySlippagePoints ?? 0} pts)
               </span>
             </div>
 
             <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/70">
-              <span className="text-[10px] text-neutral-400 uppercase font-semibold block">Exit Leg</span>
+              <span className="text-[10px] text-neutral-500 uppercase font-semibold block font-sans">Exit Leg</span>
               <p className="font-bold text-neutral-900 text-sm mt-0.5">
                 {formatCurrency(trade.exitFilledPrice || trade.exitPrice)}
               </p>
-              <span className="text-[10px] text-neutral-400 block mt-0.5">
+              <span className="text-[10px] text-neutral-400 block mt-0.5 font-sans">
                 Req: {formatCurrency(trade.exitPrice)} (Slip: {trade.exitSlippagePoints ?? 0} pts)
               </span>
             </div>
           </div>
 
           {/* Timing & Holding Metadata */}
-          <div className="space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/70 text-xs font-mono">
+          <div className="space-y-2 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/70 text-xs">
             <div className="flex items-center justify-between text-neutral-600">
-              <span className="text-neutral-400">Position Size:</span>
-              <span className="font-bold text-neutral-900">{trade.quantity} Qty (1 Lot)</span>
+              <span className="text-neutral-500">Position Size:</span>
+              <span className="font-semibold text-neutral-900 tabular-nums">{trade.quantity} Qty (1 Lot)</span>
             </div>
             <div className="flex items-center justify-between text-neutral-600">
-              <span className="text-neutral-400">Execution Mode:</span>
-              <span className="font-bold text-neutral-900">{trade.tradingMode}</span>
+              <span className="text-neutral-500">Execution Mode:</span>
+              <span className="font-semibold text-neutral-900">{trade.tradingMode}</span>
             </div>
             <div className="flex items-center justify-between text-neutral-600">
-              <span className="text-neutral-400">Holding Duration:</span>
-              <span className="font-bold text-neutral-900">{formatSecs(trade.holdingTimeSeconds)}</span>
+              <span className="text-neutral-500">Holding Duration:</span>
+              <span className="font-semibold text-neutral-900 tabular-nums">{formatSecs(trade.holdingTimeSeconds)}</span>
             </div>
             <div className="flex items-center justify-between text-neutral-600">
               <span className="text-neutral-400">Entry Timestamp:</span>

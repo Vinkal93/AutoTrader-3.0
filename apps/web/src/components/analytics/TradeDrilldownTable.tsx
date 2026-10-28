@@ -55,7 +55,7 @@ export const TradeDrilldownTable: React.FC<TradeDrilldownTableProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Trade-Level Execution Drilldown</h3>
-              <span className="text-[10px] font-mono text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] tabular-nums font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
                 {filtered.length} of {drilldowns.length} trades
               </span>
             </div>
@@ -73,7 +73,7 @@ export const TradeDrilldownTable: React.FC<TradeDrilldownTableProps> = ({
                 placeholder="Search symbol or ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 pr-3 py-1 text-xs font-mono bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:border-blue-500 w-44"
+                className="pl-8 pr-3 py-1 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:border-blue-500 w-44"
               />
             </div>
 
@@ -122,15 +122,15 @@ export const TradeDrilldownTable: React.FC<TradeDrilldownTableProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto mt-2">
-            <table className="w-full text-left text-xs font-mono">
+            <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-neutral-200 text-neutral-400 uppercase text-[10px]">
                   <th className="py-2.5 px-3 font-semibold">Contract</th>
                   <th className="py-2.5 px-3 font-semibold">Legs (Buy / Sell)</th>
                   <th className="py-2.5 px-3 font-semibold">Holding</th>
-                  <th className="py-2.5 px-3 font-semibold">Gross</th>
-                  <th className="py-2.5 px-3 font-semibold">Charges</th>
-                  <th className="py-2.5 px-3 font-semibold">Net Realized</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Gross</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Charges</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Net Realized</th>
                   <th className="py-2.5 px-3 font-semibold text-right">Details</th>
                 </tr>
               </thead>
@@ -162,13 +162,13 @@ export const TradeDrilldownTable: React.FC<TradeDrilldownTableProps> = ({
                             {t.tradingSymbol}
                           </span>
                         </div>
-                        <span className="text-[10px] text-neutral-400 block mt-0.5">
+                        <span className="text-[10px] text-neutral-400 block mt-0.5 tabular-nums">
                           {t.quantity} qty • {t.tradingMode}
                         </span>
                       </td>
 
                       <td className="py-3 px-3">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 tabular-nums">
                           <span className="text-neutral-700 font-bold">
                             ₹{t.entryFilledPrice || t.entryPrice}
                           </span>
@@ -177,30 +177,30 @@ export const TradeDrilldownTable: React.FC<TradeDrilldownTableProps> = ({
                             ₹{t.exitFilledPrice || t.exitPrice}
                           </span>
                         </div>
-                        <span className="text-[10px] text-neutral-400 block mt-0.5">
+                        <span className="text-[10px] text-neutral-400 block mt-0.5 tabular-nums">
                           Slip: {t.entrySlippagePoints ?? 0}pt / {t.exitSlippagePoints ?? 0}pt
                         </span>
                       </td>
 
                       <td className="py-3 px-3">
-                        <span className="font-medium text-neutral-700">
+                        <span className="font-medium text-neutral-700 tabular-nums">
                           {formatSecs(t.holdingTimeSeconds)}
                         </span>
-                        <span className="text-[10px] text-neutral-400 block mt-0.5">
+                        <span className="text-[10px] text-neutral-400 block mt-0.5 tabular-nums">
                           {t.closedAt ? t.closedAt.slice(11, 19) : 'Open'}
                         </span>
                       </td>
 
-                      <td className="py-3 px-3 text-neutral-600 font-medium">
+                      <td className="py-3 px-3 text-right text-neutral-600 font-medium tabular-nums">
                         {formatCurrency(t.grossPnl)}
                       </td>
 
-                      <td className="py-3 px-3 text-neutral-400 font-medium">
+                      <td className="py-3 px-3 text-right text-neutral-400 font-medium tabular-nums">
                         -{formatCurrency(t.charges)}
                       </td>
 
                       <td
-                        className={`py-3 px-3 font-bold ${
+                        className={`py-3 px-3 text-right font-bold tabular-nums ${
                           isNetPos
                             ? 'text-emerald-600'
                             : isNetNeg

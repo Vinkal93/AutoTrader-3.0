@@ -59,7 +59,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 text-neutral-400 font-mono">
+              <div className="flex items-center gap-1 text-neutral-400 tabular-nums">
                 <Clock className="w-3.5 h-3.5" />
                 <span>{formatISTDateTime(new Date().toISOString(), { timeOnly: true })}</span>
               </div>

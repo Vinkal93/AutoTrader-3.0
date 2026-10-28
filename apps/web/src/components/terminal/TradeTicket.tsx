@@ -117,7 +117,7 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
           </p>
         </div>
 
-        <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-neutral-500 text-center font-mono">
+        <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-neutral-500 text-center font-medium">
           Ready for contract selection
         </div>
       </div>
@@ -148,14 +148,14 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
         {/* Selected Instrument Pill */}
         <div className="mt-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="font-bold font-mono text-sm text-neutral-900">
+            <span className="font-bold text-sm text-neutral-900">
               {selectedContract.tradingSymbol}
             </span>
-            <span className="text-[11px] font-mono font-semibold text-neutral-500">
+            <span className="text-[11px] font-semibold text-neutral-500 tabular-nums">
               Expiry: {selectedContract.expiryDate}
             </span>
           </div>
-          <div className="flex items-center justify-between text-xs font-mono text-neutral-600">
+          <div className="flex items-center justify-between text-xs text-neutral-600 tabular-nums">
             <span>Bid: ₹{selectedContract.bidPrice.toFixed(2)} ({selectedContract.bidQuantity})</span>
             <span>•</span>
             <span>Ask: <strong className="text-neutral-900">₹{selectedContract.askPrice.toFixed(2)}</strong> ({selectedContract.askQuantity})</span>
@@ -169,7 +169,7 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
         <div className="flex items-center justify-between">
           <span className="text-neutral-600 font-medium">Position Size</span>
           <div className="flex items-center gap-2">
-            <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 font-mono text-xs">
+            <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 text-xs tabular-nums">
               <button
                 type="button"
                 onClick={() => setLotCount(Math.max(1, lotCount - 1))}
@@ -195,19 +195,19 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
             <span className="text-neutral-600 font-medium block">Intended Entry Limit</span>
             <span className="text-[10px] text-neutral-400">Executable Ask price</span>
           </div>
-          <div className="flex items-center gap-1 font-mono">
+          <div className="flex items-center gap-1 tabular-nums">
             <span>₹</span>
             <input
               type="text"
               value={intendedPrice}
               onChange={(e) => setIntendedPrice(e.target.value)}
-              className="w-20 p-1 text-right bg-neutral-50 border border-neutral-200 rounded font-bold text-neutral-900 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+              className="w-20 p-1 text-right bg-neutral-50 border border-neutral-200 rounded font-bold text-neutral-900 focus:outline-hidden focus:ring-1 focus:ring-blue-500 tabular-nums"
             />
           </div>
         </div>
 
         {/* Target Movement & Calculated Price */}
-        <div className="p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-1 font-mono">
+        <div className="p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-1 tabular-nums">
           <div className="flex items-center justify-between text-emerald-800">
             <span className="font-semibold text-xs font-sans">Target Move (+₹{targetMove})</span>
             <span className="font-bold text-xs">Target: ₹{targetPrice}</span>
@@ -219,7 +219,7 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
         </div>
 
         {/* Stop Loss Movement & Calculated Price */}
-        <div className="p-2.5 bg-rose-50/50 rounded-xl border border-rose-100 space-y-1 font-mono">
+        <div className="p-2.5 bg-rose-50/50 rounded-xl border border-rose-100 space-y-1 tabular-nums">
           <div className="flex items-center justify-between text-rose-800">
             <span className="font-semibold text-xs font-sans">Stop Loss (-₹{stopLossMove})</span>
             <span className="font-bold text-xs">SL Trigger: ₹{stopLossPrice}</span>
@@ -235,7 +235,7 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
 
         {/* Itemized Statutory Fee Estimates */}
         {validation && (
-          <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-200 text-[11px] space-y-1 font-mono text-neutral-600">
+          <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-200 text-[11px] space-y-1 tabular-nums text-neutral-600">
             <div className="flex items-center justify-between font-bold text-neutral-800">
               <span className="font-sans">Estimated Statutory Deductions:</span>
               <span>-₹{validation.estimatedCharges.totalCharges}</span>
@@ -267,8 +267,8 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
 
       {/* Action Controls */}
       <div className="space-y-2 pt-2 border-t border-neutral-100">
-        <div className="flex items-center justify-between text-xs font-mono pb-1">
-          <span className="text-neutral-500">Capital Required:</span>
+        <div className="flex items-center justify-between text-xs tabular-nums pb-1">
+          <span className="text-neutral-500 font-sans">Capital Required:</span>
           <span className="font-bold text-sm text-neutral-900">
             {validation ? formatCurrency(validation.requiredMargin) : '—'}
           </span>
@@ -298,7 +298,7 @@ export const TradeTicket: React.FC<TradeTicketProps> = ({ selectedContract, clas
               </div>
             </div>
 
-            <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs font-mono space-y-1">
+            <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs tabular-nums space-y-1">
               <div>Contract: <strong>{selectedContract.tradingSymbol}</strong></div>
               <div>Quantity: <strong>{quantity} ({lotCount} Lot)</strong></div>
               <div>Limit Price: <strong>₹{intendedPrice}</strong></div>

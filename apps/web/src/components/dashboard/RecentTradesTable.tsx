@@ -107,16 +107,16 @@ export const RecentTradesTable: React.FC<{ className?: string }> = ({ className 
               <th className="py-2.5 px-2"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100 font-mono">
+          <tbody className="divide-y divide-neutral-100">
             {isLoading ? (
               <tr>
-                <td colSpan={11} className="py-8 text-center text-neutral-400 font-sans">
+                <td colSpan={11} className="py-8 text-center text-neutral-400">
                   Loading trade cycles...
                 </td>
               </tr>
             ) : filteredCycles.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-8 text-center text-neutral-400 font-sans">
+                <td colSpan={11} className="py-8 text-center text-neutral-400">
                   No trade cycles recorded. Real trades will appear here upon strategy execution.
                 </td>
               </tr>
@@ -133,10 +133,10 @@ export const RecentTradesTable: React.FC<{ className?: string }> = ({ className 
                     onClick={() => setSelectedCycleId(c.id)}
                     className="hover:bg-neutral-50/80 cursor-pointer transition-colors group"
                   >
-                    <td className="py-3 px-3 text-neutral-600 font-sans whitespace-nowrap">
+                    <td className="py-3 px-3 text-neutral-600 tabular-nums whitespace-nowrap">
                       {formatISTDateTime(c.startedAt)}
                     </td>
-                    <td className="py-3 px-3 font-bold text-neutral-900 font-sans">
+                    <td className="py-3 px-3 font-semibold text-neutral-900">
                       {c.tradingSymbol} {c.strikePrice}
                     </td>
                     <td className="py-3 px-3">
@@ -151,35 +151,35 @@ export const RecentTradesTable: React.FC<{ className?: string }> = ({ className 
                         {c.optionType ?? 'OPT'}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-right text-neutral-700 font-semibold">
+                    <td className="py-3 px-3 text-right text-neutral-700 font-semibold tabular-nums">
                       {c.buyQuantity}
                     </td>
-                    <td className="py-3 px-3 text-right text-neutral-700">
+                    <td className="py-3 px-3 text-right text-neutral-700 tabular-nums">
                       ₹{c.buyAveragePrice}
                     </td>
-                    <td className="py-3 px-3 text-right text-neutral-700">
+                    <td className="py-3 px-3 text-right text-neutral-700 tabular-nums">
                       ₹{c.sellAveragePrice}
                     </td>
                     <td
                       className={cn(
-                        'py-3 px-3 text-right font-bold',
+                        'py-3 px-3 text-right font-bold tabular-nums',
                         gross > 0 ? 'text-emerald-600' : gross < 0 ? 'text-red-600' : 'text-neutral-700'
                       )}
                     >
                       {gross >= 0 ? '+' : ''}₹{c.grossPnl}
                     </td>
-                    <td className="py-3 px-3 text-right text-neutral-500">
+                    <td className="py-3 px-3 text-right text-neutral-500 tabular-nums">
                       -₹{c.charges.totalCharges}
                     </td>
                     <td
                       className={cn(
-                        'py-3 px-3 text-right font-bold',
+                        'py-3 px-3 text-right font-bold tabular-nums',
                         net > 0 ? 'text-emerald-600' : net < 0 ? 'text-red-600' : 'text-neutral-700'
                       )}
                     >
                       {net >= 0 ? '+' : ''}₹{c.netPnl}
                     </td>
-                    <td className="py-3 px-3 font-sans whitespace-nowrap">
+                    <td className="py-3 px-3 whitespace-nowrap">
                       <span
                         className={cn(
                           'text-[10px] px-2 py-0.5 rounded-full font-semibold border',
@@ -231,14 +231,14 @@ export const RecentTradesTable: React.FC<{ className?: string }> = ({ className 
                   {/* PnL Highlights */}
                   <div className="grid grid-cols-2 gap-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200/80">
                     <div>
-                      <span className="text-[11px] text-neutral-400 font-medium">Gross Realized P&L</span>
-                      <p className="font-mono text-base font-bold text-neutral-900">
+                      <span className="text-[11px] text-neutral-500 font-medium">Gross Realized P&L</span>
+                      <p className="tabular-nums text-base font-bold text-neutral-900">
                         ₹{selectedDetail.grossPnl}
                       </p>
                     </div>
                     <div>
-                      <span className="text-[11px] text-neutral-400 font-medium">Net Realized P&L</span>
-                      <p className={cn('font-mono text-base font-bold', parseFloat(selectedDetail.netPnl) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      <span className="text-[11px] text-neutral-500 font-medium">Net Realized P&L</span>
+                      <p className={cn('tabular-nums text-base font-bold', parseFloat(selectedDetail.netPnl) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                         ₹{selectedDetail.netPnl}
                       </p>
                     </div>
@@ -249,13 +249,13 @@ export const RecentTradesTable: React.FC<{ className?: string }> = ({ className 
                     <h4 className="font-bold text-xs text-neutral-800 uppercase tracking-wider text-[11px]">
                       Execution Specifics
                     </h4>
-                    <div className="grid grid-cols-2 gap-2 text-neutral-600 font-mono text-[11px] bg-white border border-neutral-200 rounded-lg p-3">
+                    <div className="grid grid-cols-2 gap-2 text-neutral-600 text-[11px] bg-white border border-neutral-200 rounded-lg p-3">
                       <div>Symbol: <strong className="text-neutral-900">{selectedDetail.tradingSymbol}</strong></div>
                       <div>Type: <strong className="text-neutral-900">{selectedDetail.optionType}</strong></div>
-                      <div>Buy Price: <strong className="text-neutral-900">₹{selectedDetail.buyAveragePrice}</strong></div>
-                      <div>Sell Price: <strong className="text-neutral-900">₹{selectedDetail.sellAveragePrice}</strong></div>
-                      <div>Quantity: <strong className="text-neutral-900">{selectedDetail.buyQuantity}</strong></div>
-                      <div>Duration: <strong className="text-neutral-900">{selectedDetail.durationSeconds ?? 0}s</strong></div>
+                      <div>Buy Price: <strong className="text-neutral-900 tabular-nums">₹{selectedDetail.buyAveragePrice}</strong></div>
+                      <div>Sell Price: <strong className="text-neutral-900 tabular-nums">₹{selectedDetail.sellAveragePrice}</strong></div>
+                      <div>Quantity: <strong className="text-neutral-900 tabular-nums">{selectedDetail.buyQuantity}</strong></div>
+                      <div>Duration: <strong className="text-neutral-900 tabular-nums">{selectedDetail.durationSeconds ?? 0}s</strong></div>
                     </div>
                   </div>
 
@@ -265,34 +265,34 @@ export const RecentTradesTable: React.FC<{ className?: string }> = ({ className 
                       <h4 className="font-bold text-xs text-neutral-800 uppercase tracking-wider text-[11px]">
                         Statutory Charges Breakdown
                       </h4>
-                      <span className="text-[10px] text-neutral-400 font-mono">
+                      <span className="text-[10px] text-neutral-500 font-medium">
                         {selectedDetail.charges.isPosted ? 'Posted in Ledger' : 'Calculated Estimate'}
                       </span>
                     </div>
-                    <div className="space-y-1.5 p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-600 font-mono text-[11px]">
+                    <div className="space-y-1.5 p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-600 tabular-nums text-[11px]">
                       <div className="flex justify-between">
                         <span>Brokerage:</span>
-                        <span>₹{selectedDetail.charges.brokerage}</span>
+                        <span className="text-neutral-900 font-medium">₹{selectedDetail.charges.brokerage}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Securities Transaction Tax (STT):</span>
-                        <span>₹{selectedDetail.charges.stt}</span>
+                        <span className="text-neutral-900 font-medium">₹{selectedDetail.charges.stt}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Exchange Turnover Charges:</span>
-                        <span>₹{selectedDetail.charges.exchangeTxnCharge}</span>
+                        <span className="text-neutral-900 font-medium">₹{selectedDetail.charges.exchangeTxnCharge}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>GST (18% on Brokerage & Txn):</span>
-                        <span>₹{selectedDetail.charges.gst}</span>
+                        <span className="text-neutral-900 font-medium">₹{selectedDetail.charges.gst}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>SEBI Turnover Fees:</span>
-                        <span>₹{selectedDetail.charges.sebiCharges}</span>
+                        <span className="text-neutral-900 font-medium">₹{selectedDetail.charges.sebiCharges}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Stamp Duty:</span>
-                        <span>₹{selectedDetail.charges.stampDuty}</span>
+                        <span className="text-neutral-900 font-medium">₹{selectedDetail.charges.stampDuty}</span>
                       </div>
                       <div className="flex justify-between pt-1.5 border-t border-neutral-200 font-bold text-neutral-900">
                         <span>Total Statutory Charges:</span>

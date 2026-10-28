@@ -79,7 +79,7 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
           </div>
         </div>
         <p
-          className={`font-mono text-2xl font-bold mt-1 tracking-tight ${
+          className={`tabular-nums text-2xl font-bold mt-1 tracking-tight ${
             isNetPositive
               ? 'text-emerald-600'
               : isNetNegative
@@ -89,7 +89,7 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
         >
           {formatCurrency(data?.netPnl ?? '0.00')}
         </p>
-        <div className="text-[11px] text-neutral-400 font-mono mt-2 flex items-center justify-between">
+        <div className="text-[11px] text-neutral-500 tabular-nums mt-2 flex items-center justify-between">
           <span>Gross: {formatCurrency(data?.grossPnl ?? '0.00')}</span>
           <span>Fees: -{formatCurrency(data?.totalCharges ?? '0.00')}</span>
         </div>
@@ -103,10 +103,10 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <Award className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-2xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-2xl font-bold text-neutral-900 mt-1">
           {closedCount > 0 ? `${winRate.toFixed(1)}%` : '—'}
         </p>
-        <div className="text-[11px] text-neutral-500 font-mono mt-2 flex items-center gap-1.5">
+        <div className="text-[11px] text-neutral-500 tabular-nums mt-2 flex items-center gap-1.5 font-medium">
           <span className="text-emerald-600 font-bold">{data?.winningTrades ?? 0}W</span>
           <span>•</span>
           <span className="text-rose-600 font-bold">{data?.losingTrades ?? 0}L</span>
@@ -123,14 +123,14 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <Activity className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-2xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-2xl font-bold text-neutral-900 mt-1">
           {profitFactor !== null && profitFactor !== undefined
             ? profitFactor >= 999
               ? '∞ (No Losses)'
               : profitFactor.toFixed(2)
             : '—'}
         </p>
-        <span className="text-[11px] text-neutral-400 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-400 mt-2 block">
           Gross Wins vs Gross Losses ratio
         </span>
       </div>
@@ -143,11 +143,11 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <TrendingDown className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-2xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-2xl font-bold text-neutral-900 mt-1">
           {maxDd}
           <span className="text-xs text-neutral-500 font-normal">{maxDdParm}</span>
         </p>
-        <span className="text-[11px] text-neutral-400 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-400 tabular-nums mt-2 block">
           Peak Equity: {formatCurrency(data?.peakEquity ?? '0.00')}
         </span>
       </div>
@@ -161,15 +161,15 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
           </div>
         </div>
         <div className="flex items-baseline gap-2 mt-1">
-          <span className="font-mono text-lg font-bold text-emerald-600">
+          <span className="tabular-nums text-lg font-bold text-emerald-600">
             {data?.averageWin ? formatCurrency(data.averageWin) : '—'}
           </span>
           <span className="text-xs text-neutral-400">/</span>
-          <span className="font-mono text-lg font-bold text-rose-600">
+          <span className="tabular-nums text-lg font-bold text-rose-600">
             {data?.averageLoss ? `-${formatCurrency(data.averageLoss)}` : '—'}
           </span>
         </div>
-        <span className="text-[11px] text-neutral-500 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-500 tabular-nums mt-2 block">
           Payoff Ratio: {data?.payoffRatio ? `${data.payoffRatio.toFixed(2)}x` : '—'}
         </span>
       </div>
@@ -183,7 +183,7 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
           </div>
         </div>
         <p
-          className={`font-mono text-2xl font-bold mt-1 ${
+          className={`tabular-nums text-2xl font-bold mt-1 ${
             parseFloat(data?.expectancy ?? '0') > 0
               ? 'text-emerald-600'
               : parseFloat(data?.expectancy ?? '0') < 0
@@ -193,7 +193,7 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
         >
           {data?.expectancy ? formatCurrency(data.expectancy) : '₹0.00'}
         </p>
-        <span className="text-[11px] text-neutral-400 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-400 tabular-nums mt-2 block">
           Expected value / trade (Ratio: {data?.expectancyRatio ? `${data.expectancyRatio.toFixed(2)}` : '—'})
         </span>
       </div>
@@ -206,10 +206,10 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <Clock className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-2xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-2xl font-bold text-neutral-900 mt-1">
           {formatSecs(data?.holdingTime?.averageHoldingTimeSeconds)}
         </p>
-        <div className="text-[11px] text-neutral-400 font-mono mt-2 flex items-center justify-between">
+        <div className="text-[11px] text-neutral-500 tabular-nums mt-2 flex items-center justify-between font-medium">
           <span>Wins: {formatSecs(data?.holdingTime?.averageWinningHoldingTimeSeconds)}</span>
           <span>Losses: {formatSecs(data?.holdingTime?.averageLosingHoldingTimeSeconds)}</span>
         </div>
@@ -226,18 +226,18 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
         <div className="flex items-baseline justify-between mt-1">
           <div>
             <span className="text-[10px] font-semibold text-blue-600 uppercase block">CE Net</span>
-            <span className="font-mono text-sm font-bold text-neutral-900">
+            <span className="tabular-nums text-sm font-bold text-neutral-900">
               {formatCurrency(data?.cePerformance?.netPnl ?? '0.00')}
             </span>
           </div>
           <div className="text-right">
             <span className="text-[10px] font-semibold text-purple-600 uppercase block">PE Net</span>
-            <span className="font-mono text-sm font-bold text-neutral-900">
+            <span className="tabular-nums text-sm font-bold text-neutral-900">
               {formatCurrency(data?.pePerformance?.netPnl ?? '0.00')}
             </span>
           </div>
         </div>
-        <div className="text-[11px] text-neutral-400 font-mono mt-2 flex items-center justify-between">
+        <div className="text-[11px] text-neutral-500 tabular-nums mt-2 flex items-center justify-between font-medium">
           <span>CE: {data?.cePerformance?.tradesCount ?? 0} trades</span>
           <span>PE: {data?.pePerformance?.tradesCount ?? 0} trades</span>
         </div>
@@ -252,15 +252,15 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
           </div>
         </div>
         <div className="flex items-baseline gap-2 mt-1">
-          <span className="font-mono text-base font-bold text-emerald-600">
+          <span className="tabular-nums text-base font-bold text-emerald-600">
             {data?.largestWin ? formatCurrency(data.largestWin) : '—'}
           </span>
           <span className="text-xs text-neutral-400">/</span>
-          <span className="font-mono text-base font-bold text-rose-600">
+          <span className="tabular-nums text-base font-bold text-rose-600">
             {data?.largestLoss ? `-${formatCurrency(data.largestLoss)}` : '—'}
           </span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-400 mt-2 block">
           Best trade vs worst single drawdown
         </span>
       </div>
@@ -273,12 +273,12 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <Receipt className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-xl font-bold text-neutral-900 mt-1">
           {data?.slippage?.available
             ? `${data.slippage.averageEntrySlippagePoints ?? 0} pts`
             : '0.00 pts (Exact)'}
         </p>
-        <span className="text-[11px] text-neutral-400 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-400 tabular-nums mt-2 block">
           Total Cost Impact: {formatCurrency(data?.slippage?.totalSlippageCost ?? '0.00')}
         </span>
       </div>
@@ -291,7 +291,7 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <Receipt className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-2xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-2xl font-bold text-neutral-900 mt-1">
           {formatCurrency(data?.totalCharges ?? '0.00')}
         </p>
         <div className="mt-2 flex items-center gap-1.5">
@@ -318,10 +318,10 @@ export const AnalyticsMetricsGrid: React.FC<AnalyticsMetricsGridProps> = ({
             <FileCheck2 className="w-4 h-4" />
           </div>
         </div>
-        <p className="font-mono text-2xl font-bold text-neutral-900 mt-1">
+        <p className="tabular-nums text-2xl font-bold text-neutral-900 mt-1">
           {closedCount}
         </p>
-        <span className="text-[11px] text-neutral-400 font-mono mt-2 block">
+        <span className="text-[11px] text-neutral-400 tabular-nums mt-2 block">
           Total Initiated: {data?.totalTrades ?? 0} trade cycles
         </span>
       </div>

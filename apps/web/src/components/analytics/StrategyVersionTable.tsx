@@ -38,16 +38,16 @@ export const StrategyVersionTable: React.FC<StrategyVersionTableProps> = ({
         </div>
       ) : (
         <div className="overflow-x-auto mt-3">
-          <table className="w-full text-left text-xs font-mono">
+          <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-neutral-200 text-neutral-400 uppercase text-[10px]">
-                <th className="py-2 px-3 font-semibold">Version</th>
-                <th className="py-2 px-3 font-semibold">Trades</th>
-                <th className="py-2 px-3 font-semibold">Win Rate</th>
-                <th className="py-2 px-3 font-semibold">Gross P&L</th>
-                <th className="py-2 px-3 font-semibold">Net P&L</th>
-                <th className="py-2 px-3 font-semibold">Profit Factor</th>
-                <th className="py-2 px-3 font-semibold">Max DD</th>
+                <th className="py-2.5 px-3 font-semibold">Version</th>
+                <th className="py-2.5 px-3 font-semibold text-right">Trades</th>
+                <th className="py-2.5 px-3 font-semibold text-right">Win Rate</th>
+                <th className="py-2.5 px-3 font-semibold text-right">Gross P&L</th>
+                <th className="py-2.5 px-3 font-semibold text-right">Net P&L</th>
+                <th className="py-2.5 px-3 font-semibold text-right">Profit Factor</th>
+                <th className="py-2.5 px-3 font-semibold text-right">Max DD</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 text-neutral-800">
@@ -62,29 +62,29 @@ export const StrategyVersionTable: React.FC<StrategyVersionTableProps> = ({
                       v{v.versionNumber}
                       <span className="text-[10px] text-neutral-400 font-normal ml-1">({v.strategyName})</span>
                     </td>
-                    <td className="py-2.5 px-3">{v.tradesCount}</td>
-                    <td className="py-2.5 px-3 font-bold">
+                    <td className="py-2.5 px-3 text-right tabular-nums">{v.tradesCount}</td>
+                    <td className="py-2.5 px-3 text-right font-bold tabular-nums">
                       {v.tradesCount > 0 ? `${v.winRate.toFixed(1)}%` : '—'}
                       <span className="text-[10px] text-neutral-400 font-normal ml-1">
                         ({v.winningTrades}W/{v.losingTrades}L)
                       </span>
                     </td>
-                    <td className="py-2.5 px-3">{formatCurrency(v.grossPnl)}</td>
+                    <td className="py-2.5 px-3 text-right tabular-nums">{formatCurrency(v.grossPnl)}</td>
                     <td
-                      className={`py-2.5 px-3 font-bold ${
+                      className={`py-2.5 px-3 text-right font-bold tabular-nums ${
                         isNetPos ? 'text-emerald-600' : isNetNeg ? 'text-rose-600' : 'text-neutral-900'
                       }`}
                     >
                       {formatCurrency(v.netPnl)}
                     </td>
-                    <td className="py-2.5 px-3 font-bold">
+                    <td className="py-2.5 px-3 text-right font-bold tabular-nums">
                       {v.profitFactor !== null && v.profitFactor !== undefined
                         ? v.profitFactor >= 999
                           ? '∞'
                           : v.profitFactor.toFixed(2)
                         : '—'}
                     </td>
-                    <td className="py-2.5 px-3 text-rose-600">
+                    <td className="py-2.5 px-3 text-right text-rose-600 tabular-nums font-semibold">
                       {v.maxDrawdown ? formatCurrency(v.maxDrawdown) : '₹0.00'}
                     </td>
                   </tr>

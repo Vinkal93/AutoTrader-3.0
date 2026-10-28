@@ -69,7 +69,7 @@ export const DataFreshnessIndicator: React.FC<DataFreshnessIndicatorProps> = ({
       </span>
       <span className={cn('font-medium', config.textColor)}>{config.label}</span>
       {showTimestamp && formattedTime && (
-        <span className="text-neutral-400 font-mono">({formattedTime})</span>
+        <span className="text-neutral-400 tabular-nums">({formattedTime})</span>
       )}
     </div>
   );

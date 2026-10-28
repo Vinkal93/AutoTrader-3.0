@@ -35,7 +35,7 @@ export const ActiveStrategyCard: React.FC<{ className?: string }> = ({ className
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Active Strategy</h3>
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                <span className="text-[10px] tabular-nums font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
                   v{strategy?.version ?? 1}
                 </span>
               </div>
@@ -64,7 +64,7 @@ export const ActiveStrategyCard: React.FC<{ className?: string }> = ({ className
 
           <div className="flex flex-col gap-0.5">
             <span className="text-neutral-400 font-medium">Scheduled Entry Window</span>
-            <span className="font-semibold text-neutral-800 flex items-center gap-1 font-mono">
+            <span className="font-semibold text-neutral-800 flex items-center gap-1 tabular-nums">
               <Clock className="w-3.5 h-3.5 text-blue-600" />
               {config?.entryTimeIST ?? '12:20'} IST
             </span>
@@ -72,14 +72,14 @@ export const ActiveStrategyCard: React.FC<{ className?: string }> = ({ className
 
           <div className="flex flex-col gap-0.5">
             <span className="text-neutral-400 font-medium">Premium Filter Range</span>
-            <span className="font-semibold text-neutral-800 font-mono">
+            <span className="font-semibold text-neutral-800 tabular-nums">
               ₹{config?.premiumMin ?? '40.00'} – ₹{config?.premiumMax ?? '45.00'}
             </span>
           </div>
 
           <div className="flex flex-col gap-0.5">
             <span className="text-neutral-400 font-medium">Target / Stop-Loss</span>
-            <span className="font-semibold text-neutral-800 font-mono">
+            <span className="font-semibold text-neutral-800 tabular-nums">
               +{config?.targetPremiumMove ? `₹${config.targetPremiumMove}` : '₹1.00'} / -{config?.initialStopLoss ? `₹${config.initialStopLoss}` : '₹3.00'}
             </span>
           </div>
@@ -104,14 +104,14 @@ export const ActiveStrategyCard: React.FC<{ className?: string }> = ({ className
       <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-neutral-400 font-medium">Engine Analysis:</span>
-          <span className="font-mono font-semibold text-[11px] px-2 py-0.5 rounded bg-neutral-100 text-neutral-700">
+          <span className="font-semibold text-[11px] px-2 py-0.5 rounded bg-neutral-100 text-neutral-700">
             {isMarketOpen ? 'MONITORING CANDLES' : 'WAITING FOR ANALYSIS'}
           </span>
         </div>
 
         <div className="flex items-center justify-between text-xs">
           <span className="text-neutral-400 font-medium">Next Eligible Entry:</span>
-          <span className="font-mono text-neutral-700 font-semibold text-[11px]">
+          <span className="text-neutral-700 font-semibold text-[11px] tabular-nums">
             12:20 PM IST (Next Trading Day)
           </span>
         </div>

@@ -69,8 +69,8 @@ export const TerminalHeader: React.FC = () => {
         <div className="flex items-center gap-2">
           <span className="font-extrabold text-sm tracking-tight text-neutral-900">NIFTY 50</span>
           {quote ? (
-            <div className="flex items-center gap-2 font-mono">
-              <span className="text-base font-bold text-neutral-900">
+            <div className="flex items-center gap-2 tabular-nums">
+              <span className="text-base font-bold text-neutral-900 tracking-tight">
                 {formatCurrency(quote.lastPrice, { fractionDigits: 2 })}
               </span>
               <span
@@ -86,7 +86,7 @@ export const TerminalHeader: React.FC = () => {
               </span>
             </div>
           ) : (
-            <span className="text-xs text-neutral-400 font-mono italic">Market Feed Offline</span>
+            <span className="text-xs text-neutral-400 font-medium italic">Market Feed Offline</span>
           )}
         </div>
 
@@ -105,7 +105,7 @@ export const TerminalHeader: React.FC = () => {
         {/* Broker Status */}
         <div className="hidden sm:flex items-center gap-1.5 pl-3 border-l border-neutral-200">
           <StatusIndicator status={brokerState} size="sm" />
-          <span className="text-[11px] text-neutral-500 font-mono">Kotak Neo</span>
+          <span className="text-[11px] text-neutral-500 font-medium">Kotak Neo</span>
         </div>
       </div>
 

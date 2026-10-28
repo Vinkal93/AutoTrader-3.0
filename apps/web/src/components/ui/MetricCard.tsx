@@ -93,8 +93,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         ) : (
           <span
             className={cn(
-              'text-2xl font-bold tracking-tight font-mono',
-              isNoData ? 'text-neutral-400 font-sans' : 'text-neutral-900'
+              'text-2xl font-bold tracking-tight tabular-nums',
+              isNoData ? 'text-neutral-400' : 'text-neutral-900'
             )}
           >
             {displayVal}

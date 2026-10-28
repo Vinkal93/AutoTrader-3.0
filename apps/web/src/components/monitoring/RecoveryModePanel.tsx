@@ -74,13 +74,13 @@ export const RecoveryModePanel: React.FC<RecoveryModePanelProps> = ({
       {/* Discrepancies and State Display */}
       <div className="mt-4">
         {lastResult ? (
-          <div className="space-y-3 font-mono text-xs">
+          <div className="space-y-3 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/80">
                 <span className="text-[10px] text-neutral-400 uppercase font-semibold block">
                   Reconciled Cycles
                 </span>
-                <span className="font-bold text-base text-neutral-900 mt-1 block">
+                <span className="font-bold text-base tabular-nums text-neutral-900 mt-1 block">
                   {lastResult.openPositionsReconciled}
                 </span>
               </div>
@@ -90,7 +90,7 @@ export const RecoveryModePanel: React.FC<RecoveryModePanelProps> = ({
                   Unprotected Positions
                 </span>
                 <span
-                  className={`font-bold text-base mt-1 block ${
+                  className={`font-bold text-base tabular-nums mt-1 block ${
                     lastResult.unprotectedPositionsCount === 0 ? 'text-emerald-600' : 'text-rose-600'
                   }`}
                 >
@@ -128,13 +128,13 @@ export const RecoveryModePanel: React.FC<RecoveryModePanelProps> = ({
               </div>
             )}
 
-            <div className="text-[11px] text-neutral-400 flex items-center justify-between pt-1">
+            <div className="text-[11px] text-neutral-400 flex items-center justify-between pt-1 tabular-nums">
               <span>Last Reconciled: {formatISTDateTime(lastResult.reconciledAt)}</span>
-              <span>Duplicate BUY Guards: ACTIVE</span>
+              <span className="font-semibold text-neutral-500">Duplicate BUY Guards: ACTIVE</span>
             </div>
           </div>
         ) : (
-          <div className="h-24 flex items-center justify-center text-xs text-neutral-400 font-mono">
+          <div className="h-24 flex items-center justify-center text-xs text-neutral-400">
             Click &quot;Run Full Reconciliation&quot; to cross-reference broker positions and orders with database records.
           </div>
         )}

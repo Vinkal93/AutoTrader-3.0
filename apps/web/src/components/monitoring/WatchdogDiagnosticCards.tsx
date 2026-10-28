@@ -67,9 +67,9 @@ export const WatchdogDiagnosticCards: React.FC<WatchdogDiagnosticCardsProps> = (
           ) : (
             <XCircle className="w-4 h-4 text-rose-600" />
           )}
-          <span className="font-mono text-base font-bold text-neutral-900">{hbStatus}</span>
+          <span className="text-base font-bold tracking-tight text-neutral-900 tabular-nums">{hbStatus}</span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-1.5 block">
+        <span className="text-[11px] text-neutral-500 tabular-nums mt-1.5 block">
           Age: {status?.lastHeartbeatAgeSeconds !== null ? `${status?.lastHeartbeatAgeSeconds}s ago` : '—'} (limit: &lt;15s)
         </span>
       </div>
@@ -88,9 +88,9 @@ export const WatchdogDiagnosticCards: React.FC<WatchdogDiagnosticCardsProps> = (
           ) : (
             <XCircle className="w-4 h-4 text-rose-600" />
           )}
-          <span className="font-mono text-base font-bold text-neutral-900">{brokerStatus}</span>
+          <span className="text-base font-bold tracking-tight text-neutral-900">{brokerStatus}</span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-1.5 block">
+        <span className="text-[11px] text-neutral-500 mt-1.5 block">
           Kotak Neo JWT / TOTP token verification
         </span>
       </div>
@@ -109,9 +109,9 @@ export const WatchdogDiagnosticCards: React.FC<WatchdogDiagnosticCardsProps> = (
           ) : (
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           )}
-          <span className="font-mono text-base font-bold text-neutral-900">{feedStatus}</span>
+          <span className="text-base font-bold tracking-tight text-neutral-900 tabular-nums">{feedStatus}</span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-1.5 block">
+        <span className="text-[11px] text-neutral-500 tabular-nums mt-1.5 block">
           Staleness: {status?.marketFeedStalenessSeconds !== null ? `${status?.marketFeedStalenessSeconds}s` : '—'} (limit: &lt;30s)
         </span>
       </div>
@@ -130,9 +130,9 @@ export const WatchdogDiagnosticCards: React.FC<WatchdogDiagnosticCardsProps> = (
           ) : (
             <XCircle className="w-4 h-4 text-rose-600" />
           )}
-          <span className="font-mono text-base font-bold text-neutral-900">{orderFeedStatus}</span>
+          <span className="text-base font-bold tracking-tight text-neutral-900">{orderFeedStatus}</span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-1.5 block">
+        <span className="text-[11px] text-neutral-500 mt-1.5 block">
           WebSocket fill confirmation channel
         </span>
       </div>
@@ -151,10 +151,10 @@ export const WatchdogDiagnosticCards: React.FC<WatchdogDiagnosticCardsProps> = (
           ) : (
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           )}
-          <span className="font-mono text-base font-bold text-neutral-900">{ipStatus}</span>
+          <span className="text-base font-bold tracking-tight text-neutral-900">{ipStatus}</span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-1.5 block">
-          Current IP: {status?.currentStaticIp ?? '127.0.0.1'} (Whitelisted)
+        <span className="text-[11px] text-neutral-500 mt-1.5 block">
+          Current IP: <code className="font-mono text-neutral-700 bg-neutral-100 px-1 py-0.5 rounded text-[10px]">{status?.currentStaticIp ?? '127.0.0.1'}</code> (Whitelisted)
         </span>
       </div>
 
@@ -172,11 +172,11 @@ export const WatchdogDiagnosticCards: React.FC<WatchdogDiagnosticCardsProps> = (
           ) : (
             <XCircle className="w-4 h-4 text-rose-600" />
           )}
-          <span className="font-mono text-base font-bold text-neutral-900">
+          <span className="text-base font-bold tracking-tight text-neutral-900 tabular-nums">
             {unprotCount === 0 ? '0 Unprotected' : `${unprotCount} CRITICAL ALERT`}
           </span>
         </div>
-        <span className="text-[11px] text-neutral-400 font-mono mt-1.5 block">
+        <span className="text-[11px] text-neutral-500 mt-1.5 block">
           Every open position has verified SL-L
         </span>
       </div>

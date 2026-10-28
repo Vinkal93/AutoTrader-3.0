@@ -56,7 +56,7 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
           <Layers className="w-4 h-4 text-neutral-500" />
           <h3 className="font-bold text-sm text-neutral-900 tracking-tight">NIFTY Option Chain</h3>
           {chain?.spotPrice && (
-            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-neutral-100 text-neutral-700">
+            <span className="text-xs tabular-nums font-semibold px-2 py-0.5 rounded bg-neutral-100 text-neutral-700">
               Spot: ₹{chain.spotPrice.toFixed(2)}
             </span>
           )}
@@ -71,7 +71,7 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
               placeholder="Search strike..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs font-mono w-28 sm:w-36 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+              className="pl-8 pr-3 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs tabular-nums w-28 sm:w-36 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -109,7 +109,7 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
               <th className="py-2 px-2.5 text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100 font-mono text-neutral-800">
+          <tbody className="divide-y divide-neutral-100 text-neutral-800">
             {isLoading ? (
               <tr>
                 <td colSpan={8} className="py-8 text-center text-neutral-400 font-sans text-xs">

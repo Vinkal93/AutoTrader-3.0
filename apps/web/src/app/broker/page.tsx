@@ -72,13 +72,13 @@ export default function BrokerPage() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="px-3.5 py-2 rounded-lg bg-neutral-50 border border-neutral-200 text-xs">
               <span className="text-neutral-500 block">Session Expiry</span>
-              <span className="font-mono font-semibold text-neutral-800">
+              <span className="tabular-nums font-semibold text-neutral-800">
                 {broker?.sessionExpiresAt ? formatISTDateTime(broker.sessionExpiresAt) : '—'}
               </span>
             </div>
             <div className="px-3.5 py-2 rounded-lg bg-neutral-50 border border-neutral-200 text-xs">
               <span className="text-neutral-500 block">Connected At</span>
-              <span className="font-mono font-semibold text-neutral-800">
+              <span className="tabular-nums font-semibold text-neutral-800">
                 {broker?.connectedAt ? formatISTDateTime(broker.connectedAt) : '—'}
               </span>
             </div>
@@ -161,7 +161,7 @@ export default function BrokerPage() {
               <span className="font-semibold text-neutral-800">Consumer Key & Secret</span>
               <p className="text-xs text-neutral-500">KOTAK_CONSUMER_KEY, KOTAK_CONSUMER_SECRET</p>
             </div>
-            <span className="text-xs font-mono px-2 py-1 rounded bg-neutral-100 text-neutral-700">
+            <span className="text-xs font-semibold px-2 py-1 rounded bg-neutral-100 text-neutral-700">
               {isNotConfigured ? 'Missing in .env' : 'Configured'}
             </span>
           </div>
@@ -171,7 +171,7 @@ export default function BrokerPage() {
               <span className="font-semibold text-neutral-800">Trading Mobile & MPIN / Password</span>
               <p className="text-xs text-neutral-500">KOTAK_MOBILE_NUMBER, KOTAK_PASSWORD</p>
             </div>
-            <span className="text-xs font-mono px-2 py-1 rounded bg-neutral-100 text-neutral-700">
+            <span className="text-xs font-semibold px-2 py-1 rounded bg-neutral-100 text-neutral-700">
               {isNotConfigured ? 'Missing in .env' : 'Configured'}
             </span>
           </div>
@@ -181,7 +181,7 @@ export default function BrokerPage() {
               <span className="font-semibold text-neutral-800">Time-based OTP (TOTP) Secret</span>
               <p className="text-xs text-neutral-500">KOTAK_TOTP_KEY for automated 2FA login</p>
             </div>
-            <span className="text-xs font-mono px-2 py-1 rounded bg-neutral-100 text-neutral-700">
+            <span className="text-xs font-semibold px-2 py-1 rounded bg-neutral-100 text-neutral-700">
               {isNotConfigured ? 'Missing in .env' : 'Configured'}
             </span>
           </div>

@@ -109,21 +109,21 @@ export const AutomationMonitorCard: React.FC<{ className?: string }> = ({ classN
 
           <div className="flex flex-col gap-1">
             <span className="text-neutral-400 font-medium">Open Positions</span>
-            <span className="font-semibold text-neutral-800 font-mono text-sm">
+            <span className="font-semibold text-neutral-800 tabular-nums text-sm">
               {positionCount} contracts
             </span>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-neutral-400 font-medium">Pending Orders</span>
-            <span className="font-semibold text-neutral-800 font-mono text-sm">
+            <span className="font-semibold text-neutral-800 tabular-nums text-sm">
               {pendingOrdersCount} orders
             </span>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-neutral-400 font-medium">Market Feed (WebSocket)</span>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-neutral-700">
+            <div className="flex items-center gap-1.5 text-[11px] text-neutral-700 font-medium">
               <span
                 className={cn(
                   'w-2 h-2 rounded-full',
@@ -136,7 +136,7 @@ export const AutomationMonitorCard: React.FC<{ className?: string }> = ({ classN
 
           <div className="flex flex-col gap-1">
             <span className="text-neutral-400 font-medium">Order Feed (WebSocket)</span>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-neutral-700">
+            <div className="flex items-center gap-1.5 text-[11px] text-neutral-700 font-medium">
               <span
                 className={cn(
                   'w-2 h-2 rounded-full',
@@ -150,15 +150,15 @@ export const AutomationMonitorCard: React.FC<{ className?: string }> = ({ classN
       </div>
 
       {/* Heartbeat & Sync Diagnostics Footer */}
-      <div className="pt-3 border-t border-neutral-100 flex flex-col gap-1.5 text-[11px] text-neutral-500 font-mono">
+      <div className="pt-3 border-t border-neutral-100 flex flex-col gap-1.5 text-[11px] text-neutral-500">
         <div className="flex justify-between items-center">
-          <span className="font-sans text-neutral-400">Worker Heartbeat:</span>
-          <span className="text-neutral-700 font-semibold">
+          <span className="text-neutral-400">Worker Heartbeat:</span>
+          <span className="text-neutral-700 font-semibold tabular-nums">
             {systemStatus?.workerHeartbeat ? formatISTTime(systemStatus.workerHeartbeat) : 'Awaiting worker'}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="font-sans text-neutral-400">Last Engine Reason:</span>
+          <span className="text-neutral-400">Last Engine Reason:</span>
           <span className="text-neutral-700 truncate max-w-[200px]" title={systemStatus?.lastStateChange.reason}>
             {systemStatus?.lastStateChange.reason ?? 'Bootstrap'}
           </span>

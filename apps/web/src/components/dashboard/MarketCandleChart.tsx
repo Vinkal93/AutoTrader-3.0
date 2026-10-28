@@ -132,14 +132,14 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm tracking-tight text-neutral-900">NIFTY Candlesticks</h3>
-            <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700">
+            <span className="text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700">
               {interval.toUpperCase()}
             </span>
           </div>
 
           {/* Real-time spot price badge */}
           {quote && (
-            <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-lg">
+            <div className="flex items-center gap-1.5 text-xs tabular-nums font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-lg">
               <span className="text-neutral-900">{formatCurrency(quote.lastPrice)}</span>
               <span className={quote.change >= 0 ? 'text-emerald-600' : 'text-red-600'}>
                 {quote.change >= 0 ? '+' : ''}
@@ -169,7 +169,7 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
           </div>
 
           {/* EMA Toggles */}
-          <div className="flex items-center gap-1 bg-neutral-50 border border-neutral-200 px-2 py-1 rounded-lg text-xs font-mono">
+          <div className="flex items-center gap-1 bg-neutral-50 border border-neutral-200 px-2 py-1 rounded-lg text-xs font-semibold">
             <button
               type="button"
               onClick={() => setShowEMA9(!showEMA9)}
@@ -224,7 +224,7 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
 
       {/* OHLC Bar Inspector */}
       {activeCandle ? (
-        <div className="flex items-center gap-4 text-xs font-mono py-2 text-neutral-600 overflow-x-auto border-b border-neutral-100">
+        <div className="flex items-center gap-4 text-xs tabular-nums py-2 text-neutral-600 overflow-x-auto border-b border-neutral-100">
           <span className="text-neutral-400">
             TIME: <strong className="text-neutral-800">{formatISTTime(activeCandle.timestamp)}</strong>
           </span>
@@ -255,7 +255,7 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
           )}
         </div>
       ) : (
-        <div className="py-2 text-xs text-neutral-400 font-mono">
+        <div className="py-2 text-xs text-neutral-400">
           Hover over candles to inspect OHLC and indicator levels
         </div>
       )}
@@ -302,7 +302,8 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
                     y={y + 4}
                     fill="#94a3b8"
                     fontSize="10"
-                    fontFamily="monospace"
+                    fontFamily="var(--font-inter), sans-serif"
+                    className="tabular-nums"
                   >
                     {price.toFixed(1)}
                   </text>
@@ -341,7 +342,8 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
                     fill="#ffffff"
                     fontSize="9"
                     fontWeight="bold"
-                    fontFamily="monospace"
+                    fontFamily="var(--font-inter), sans-serif"
+                    className="tabular-nums"
                   >
                     12:20
                   </text>
@@ -463,8 +465,9 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
                       y={priceToY(visibleCandles[hoveredIndex].close) + 3}
                       fill="#ffffff"
                       fontSize="9"
-                      fontFamily="monospace"
+                      fontFamily="var(--font-inter), sans-serif"
                       fontWeight="bold"
+                      className="tabular-nums"
                     >
                       {visibleCandles[hoveredIndex].close.toFixed(1)}
                     </text>
@@ -487,7 +490,8 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
                   textAnchor="middle"
                   fill="#94a3b8"
                   fontSize="9"
-                  fontFamily="monospace"
+                  fontFamily="var(--font-inter), sans-serif"
+                  className="tabular-nums"
                 >
                   {formatISTTime(c.timestamp)}
                 </text>
@@ -513,7 +517,7 @@ export const MarketCandleChart: React.FC<MarketCandleChartProps> = ({
             12:20 PM Scheduled Entry Window
           </span>
         </div>
-        <span className="font-mono text-[10px]">Timezone: Asia/Kolkata (IST)</span>
+        <span className="tabular-nums text-[10px]">Timezone: Asia/Kolkata (IST)</span>
       </div>
     </div>
   );
