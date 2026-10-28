@@ -14,6 +14,7 @@ class WorkerSettings(BaseSettings):
     LEADER_LOCK_TTL_SECONDS: int = 15
     DATABASE_URL: str = "postgresql+asyncpg://autotrader:localdev@localhost:5432/autotrader"
     REDIS_URL: Optional[str] = "redis://localhost:6379/0"
+    API_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
