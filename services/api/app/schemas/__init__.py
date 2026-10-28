@@ -50,6 +50,15 @@ from app.schemas.strategy import (
     StrategyValidationResult,
     StrategyValidationWarning,
 )
+from app.schemas.analytics import (
+    ChargeBreakdown,
+    DailyPnlEntry,
+    EngineStateTransitionRequest,
+    EquityPoint,
+    PerformanceMetrics,
+    RiskAllowance,
+    TradeCycleDetail,
+)
 
 __all__ = [
     "CamelModel",
@@ -88,4 +97,11 @@ __all__ = [
     "DashboardActiveStrategy",
     "DashboardOverview",
     "SystemEvent",
+    "ChargeBreakdown",
+    "TradeCycleDetail",
+    "DailyPnlEntry",
+    "EquityPoint",
+    "PerformanceMetrics",
+    "RiskAllowance",
+    "EngineStateTransitionRequest",
 ]

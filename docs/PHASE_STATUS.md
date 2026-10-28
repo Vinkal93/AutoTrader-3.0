@@ -39,19 +39,40 @@ The platform has reached full structural completion for **Phase 1: Read-Only Fou
 
 ---
 
-## 3. Readiness Checklist for Phase 2 Transition
+## 3. Phase 2 Completion Scorecard: Dashboard UI/UX & Real-Data Integration
 
-Before Phase 2 (Paper Trading & Simulated Order Execution) can be authorized by the system administrator, all items on this checklist must be satisfied:
+The platform has reached full completion for **Phase 2: Complete Dashboard UI/UX & Real-Data Integration**.
 
-- [ ] **Paper Trading Engine Implementation**:
-  - Virtual order matching simulator validating fills against live bid/ask quotes from Kotak Neo option chain feeds.
-- [ ] **Execution Intent Pipeline**:
-  - End-to-end testing of `execution_intents` approval workflows with simulated slippage and latency tracking.
-- [ ] **Reconciliation Engine**:
-  - Automated worker routine reconciling local simulated positions against database ledger every 30 seconds.
-- [ ] **Live Order Gating Mechanism**:
-  - Dual-key cryptographic confirmation dialog requiring explicit manual passkey entry prior to promoting an account into live trading.
-- [ ] **Static IP Regulatory Audit**:
-  - Outbound VPS static IP verified and formally registered in Kotak Securities developer portal.
-- [ ] **Formal Risk Parameter Sign-Off**:
-  - Administrative verification of `maxRiskPerTrade`, `maxDailyLoss`, and `minTradingFunds` across all active strategy versions.
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Route Architecture** | Single shared route registry ([`routes.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/lib/routes.ts)), 11 distinct navigation paths, subpages, badge locks | **COMPLETED** | [`routes.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/lib/routes.ts), [`Sidebar.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/layout/Sidebar.tsx) |
+| **Financial KPI Cards** | Available Funds, Gross P&L, Net P&L (ACTUAL/ESTIMATED quality flag), Statutory Charges breakdown, Win Rate with exact denominator, Trading Risk Allowance | **COMPLETED** | [`FinancialKpiGrid.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/FinancialKpiGrid.tsx) |
+| **Interactive Candlestick Chart** | 1m, 5m, 15m intervals, EMA 9 & EMA 21 overlays, 12:20 IST entry marker, crosshairs, pan/zoom, truthful disconnected state | **COMPLETED** | [`MarketCandleChart.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/MarketCandleChart.tsx) |
+| **Active Strategy Monitor** | 12:20 PM IST rules display, NIFTY options criteria, target/stop-loss distances, skip reasons, unconfigured risk locks | **COMPLETED** | [`ActiveStrategyCard.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/ActiveStrategyCard.tsx) |
+| **Automation Monitor & Controls** | Worker engine state, broker connection, open positions, pending orders, WebSocket feeds, operator Pause/Resume mutations | **COMPLETED** | [`AutomationMonitorCard.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/AutomationMonitorCard.tsx) |
+| **Performance Analytics** | Daily net P&L bar visualization, cumulative equity curve, win/loss stats, profit factor, timeframe filters (TODAY, 7D, 30D, ALL) | **COMPLETED** | [`PerformanceCharts.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/PerformanceCharts.tsx) |
+| **Trade Ledger & Slide-Over** | Searchable/filterable trade cycles, CE/PE badges, slide-over detail drawer showing itemized charges (Brokerage, STT, GST, SEBI, stamp duty) | **COMPLETED** | [`RecentTradesTable.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/RecentTradesTable.tsx) |
+| **Real-Time Activity Feed** | System event logs with severity tabs (ALL, CRITICAL, ERROR, WARNING, INFO) | **COMPLETED** | [`SystemActivityFeed.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/dashboard/SystemActivityFeed.tsx) |
+| **Backend REST Endpoints** | `/api/v1/analytics/performance`, `/api/v1/analytics/risk`, `/api/v1/trade-cycles`, `/api/v1/system/engine-state` | **COMPLETED** | [`analytics.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/analytics.py), [`trade_cycles.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/trade_cycles.py) |
+| **Data Integrity & Zero Mock** | Zero synthetic mock data in runtime; disconnected broker displays truth (`NOT_CONFIGURED` / `UNAVAILABLE`); gross vs net invariants strictly enforced | **COMPLETED** | [`financial-math.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/financial-math.test.ts) |
+
+---
+
+## 4. Phase 2 Boundaries & Hard Lock Notice
+
+> [!CAUTION]
+> **HARD SAFETY LOCK:**
+> In accordance with Prime Directive 1.8 and Phase 2 requirements, **live broker order submission (`place_order`, `modify_order`, `cancel_order`) remains strictly locked.**
+> Automated trading mode (`LIVE`) is disabled in the UI and rejected by the backend engine until Phase 3 authorization and pre-flight validation checklist completion.
+
+---
+
+## 5. Phase 3 Readiness & Transition Checklist
+
+Prior to activating Phase 3 (Automated Trading Execution Loop):
+
+- [ ] **Paper Trading Engine Activation**: Verify simulated fill executions against real bid/ask feeds.
+- [ ] **Dual-Key Passkey Gate**: Cryptographic authorization required before switching from PAPER to LIVE mode.
+- [ ] **Statutory Charge Auditing**: Confirm live broker contract notes match estimated STT/GST/turnover schedules.
+- [ ] **Outbound VPS IP Registration**: Formally register VPS static IP in Kotak Securities developer portal.
+- [ ] **Automated Square-Off Verification**: 15:15 PM IST hard auto-square-off worker routine dry-run testing.

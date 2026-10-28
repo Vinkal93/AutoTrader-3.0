@@ -106,6 +106,38 @@ async def test_endpoint_contracts_and_security_headers():
         assert "pagination" in body
         assert isinstance(body["data"], list)
 
+        # 13. Analytics Performance
+        res = await client.get("/api/v1/analytics/performance?timeframe=TODAY")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert body["data"]["timeframe"] == "TODAY"
+        assert "winRate" in body["data"]
+        assert "grossPnl" in body["data"]
+        assert "netPnl" in body["data"]
+
+        # 14. Analytics Risk
+        res = await client.get("/api/v1/analytics/risk")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert "realizedLossToday" in body["data"]
+
+        # 15. Trade Cycles
+        res = await client.get("/api/v1/trade-cycles")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert "pagination" in body
+        assert isinstance(body["data"], list)
+
+        # 16. Engine state transition
+        res = await client.post("/api/v1/system/engine-state", json={"state": "PAUSED", "reason": "Test pause"})
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert body["data"]["engineState"] == "PAUSED"
+
 
 @pytest.mark.asyncio
 async def test_mode_switch_blocked_for_live_when_risk_unconfigured():

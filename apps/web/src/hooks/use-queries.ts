@@ -14,6 +14,11 @@ import {
   type DashboardOverview,
   type SystemEvent,
   type TradingMode,
+  type EngineState,
+  type TradeCycleDetail,
+  type PerformanceMetrics,
+  type RiskAllowance,
+  type CandlesResponse,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -25,6 +30,11 @@ export const queryKeys = {
   positions: ['positions'] as const,
   orders: ['orders'] as const,
   trades: ['trades'] as const,
+  tradeCycles: (page: number, pageSize: number) => ['tradeCycles', page, pageSize] as const,
+  tradeCycleDetail: (id: string) => ['tradeCycleDetail', id] as const,
+  performanceMetrics: (timeframe: string) => ['performanceMetrics', timeframe] as const,
+  riskAllowance: ['riskAllowance'] as const,
+  candles: (symbol: string, interval: string) => ['candles', symbol, interval] as const,
   niftyQuote: ['niftyQuote'] as const,
   strategies: ['strategies'] as const,
   activeStrategy: ['activeStrategy'] as const,
@@ -186,6 +196,72 @@ export function useSystemEvents(limit = 50, refetchInterval: number | false = 10
   });
 }
 
+// 13. Trade Cycles
+export function useTradeCycles(page = 1, pageSize = 20, refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.tradeCycles(page, pageSize),
+    queryFn: async () => {
+      const res = await api.get<TradeCycleDetail[]>(`${API_ROUTES.tradeCycles}?page=${page}&page_size=${pageSize}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 14. Trade Cycle Detail
+export function useTradeCycleDetail(id: string | null) {
+  return useQuery({
+    queryKey: id ? queryKeys.tradeCycleDetail(id) : ['tradeCycleDetail', 'none'],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await api.get<TradeCycleDetail>(`${API_ROUTES.tradeCycles}/${id}`);
+      return res.data;
+    },
+    enabled: Boolean(id),
+    retry: 1,
+  });
+}
+
+// 15. Performance Metrics
+export function usePerformanceMetrics(timeframe: 'TODAY' | '7D' | '30D' | 'ALL' = 'TODAY', refetchInterval: number | false = 15000) {
+  return useQuery({
+    queryKey: queryKeys.performanceMetrics(timeframe),
+    queryFn: async () => {
+      const res = await api.get<PerformanceMetrics>(`${API_ROUTES.analyticsPerformance}?timeframe=${timeframe}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 16. Risk Allowance
+export function useRiskAllowance(refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.riskAllowance,
+    queryFn: async () => {
+      const res = await api.get<RiskAllowance>('/api/v1/analytics/risk');
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 17. Candlesticks
+export function useCandles(symbol = 'NIFTY', interval = '5m', refetchInterval: number | false = 5000) {
+  return useQuery({
+    queryKey: queryKeys.candles(symbol, interval),
+    queryFn: async () => {
+      const res = await api.get<CandlesResponse>(`${API_ROUTES.candles}?symbol=${symbol}&interval=${interval}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
 // Mutations
 export function useReconnectBroker() {
   const queryClient = useQueryClient();
@@ -198,6 +274,7 @@ export function useReconnectBroker() {
       queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnection });
       queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+      queryClient.invalidateQueries({ queryKey: ['accountFunds'] });
     },
   });
 }
@@ -206,7 +283,21 @@ export function useSetTradingMode() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (mode: TradingMode) => {
-      const res = await api.post<{ mode: TradingMode }>('/api/v1/system/mode', { mode });
+      const res = await api.post<SystemStatusResponse>(API_ROUTES.systemMode, { mode });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+export function useTransitionEngineState() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ state, reason }: { state: EngineState; reason?: string }) => {
+      const res = await api.post<SystemStatusResponse>(API_ROUTES.systemEngineState, { state, reason });
       return res.data;
     },
     onSuccess: () => {

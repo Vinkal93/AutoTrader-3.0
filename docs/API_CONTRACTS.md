@@ -270,3 +270,35 @@ Aggregated telemetry summary optimized for single-call dashboard rendering.
 Paginated audit of system and risk events.
 - **Authentication**: Bearer JWT.
 - **Response**: `PaginatedResponse<SystemEvent>`
+
+---
+
+### 3.7 Phase 2 Analytics, Trade Cycles & Engine Control
+
+#### `POST /api/v1/system/engine-state`
+Operator endpoint to pause, resume, or transition engine state.
+- **Authentication**: Bearer JWT.
+- **Request Body**: `EngineStateTransitionRequest` (`{ "state": "PAUSED" | "RUNNING" | "STOPPED", "reason": string }`)
+- **Response**: `ApiResponse<{ previousState: string, currentState: string, transitionAt: string }>`
+
+#### `GET /api/v1/analytics/performance?timeframe=7D`
+Aggregated trading performance metrics, equity progression, win rates, and statutory charge totals.
+- **Authentication**: Bearer JWT.
+- **Query Parameters**: `timeframe` (`TODAY`, `7D`, `30D`, `ALL`)
+- **Response**: `ApiResponse<PerformanceMetrics>`
+
+#### `GET /api/v1/analytics/risk`
+Configured risk allowances, daily loss limits, remaining cushions, and risk lock status.
+- **Authentication**: Bearer JWT.
+- **Response**: `ApiResponse<RiskAllowance>`
+
+#### `GET /api/v1/trade-cycles?page=1&limit=20`
+Paginated ledger of closed and open trade cycles with gross/net P&L and fee breakdowns.
+- **Authentication**: Bearer JWT.
+- **Query Parameters**: `page` (default: 1), `limit` (default: 20)
+- **Response**: `PaginatedResponse<TradeCycleDetail>`
+
+#### `GET /api/v1/trade-cycles/{trade_cycle_id}`
+Detailed execution specifics and itemized statutory fee breakdown (Brokerage, STT, Exchange, GST, SEBI, Stamp Duty) for a single trade cycle.
+- **Authentication**: Bearer JWT.
+- **Response**: `ApiResponse<TradeCycleDetail>`

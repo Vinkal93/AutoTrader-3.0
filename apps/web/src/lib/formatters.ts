@@ -129,3 +129,7 @@ export function formatISTDateTime(
     return fallback;
   }
 }
+
+export function formatISTTime(isoDate: string | null | undefined, fallback = '—'): string {
+  return formatISTDateTime(isoDate, { timeOnly: true, fallback });
+}

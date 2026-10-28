@@ -17,6 +17,7 @@ export type StatusType =
 export interface StatusIndicatorProps {
   status: StatusType | string;
   label?: string;
+  showLabel?: boolean;
   pulse?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -94,6 +95,7 @@ const statusColorMap: Record<string, { dot: string; bg: string; text: string; bo
 export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
   status,
   label,
+  showLabel = true,
   pulse,
   size = 'md',
   className,
@@ -140,7 +142,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
         )}
         <span className={cn('relative inline-flex rounded-full', theme.dot, dotSize)} />
       </span>
-      <span>{displayText}</span>
+      {showLabel && <span>{displayText}</span>}
     </span>
   );
 };

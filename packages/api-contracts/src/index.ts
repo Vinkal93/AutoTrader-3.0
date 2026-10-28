@@ -440,11 +440,100 @@ export interface SystemEvent {
   timestamp: string;
 }
 
+// ---- Trade Cycles & Detailed Executions ----
+
+export interface ChargeBreakdown {
+  brokerage: string;
+  stt: string;
+  exchangeTxnCharge: string;
+  gst: string;
+  sebiCharges: string;
+  stampDuty: string;
+  totalCharges: string;
+  isPosted: boolean;
+}
+
+export interface TradeCycleDetail {
+  id: string;
+  strategyRunId: string;
+  tradingMode: TradingMode;
+  state: TradeCycleState;
+  tradingSymbol: string;
+  optionType?: OptionType;
+  strikePrice?: string;
+  expiryDate?: string;
+  buyQuantity: number;
+  buyAveragePrice: string;
+  sellAveragePrice: string;
+  grossPnl: string;
+  netPnl: string;
+  charges: ChargeBreakdown;
+  chargesStatus: 'ACTUAL' | 'ESTIMATED' | 'UNAVAILABLE';
+  durationSeconds: number | null;
+  exitReason: string | null;
+  entryOrderId: string | null;
+  exitOrderId: string | null;
+  brokerOrderRef: string | null;
+  reconciliationStatus: 'RECONCILED' | 'PENDING' | 'MISMATCH' | 'PARTIAL';
+  startedAt: string;
+  closedAt: string | null;
+}
+
+// ---- Performance & Analytics ----
+
+export interface PerformanceMetrics {
+  timeframe: 'TODAY' | '7D' | '30D' | 'ALL';
+  totalTrades: number;
+  closedTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  breakevenTrades: number;
+  winRate: number; // 0-100 percentage
+  grossPnl: string;
+  netPnl: string;
+  totalCharges: string;
+  chargesStatus: 'ACTUAL' | 'ESTIMATED' | 'UNAVAILABLE';
+  maxDrawdown: string | null;
+  maxDrawdownPercent: string | null;
+  profitFactor: number | null;
+  dailyPnlSeries: Array<{
+    date: string;
+    grossPnl: number;
+    netPnl: number;
+    tradesCount: number;
+  }>;
+  equityCurve: Array<{
+    timestamp: string;
+    equity: number;
+  }>;
+}
+
+// ---- Risk Metrics ----
+
+export interface RiskAllowance {
+  dailyLossLimit: string | null;
+  realizedLossToday: string;
+  openExposure: string;
+  remainingDailyAllowance: string | null;
+  maxRiskPerTrade: string | null;
+  isRiskLocked: boolean;
+  lockoutReason: string | null;
+}
+
+// ---- Engine State Transition Request ----
+
+export interface EngineStateTransitionRequest {
+  state: EngineState;
+  reason?: string;
+}
+
 // ---- API Route Definitions ----
 
 export const API_ROUTES = {
   health: '/api/v1/health',
   systemStatus: '/api/v1/system/status',
+  systemMode: '/api/v1/system/mode',
+  systemEngineState: '/api/v1/system/engine-state',
   brokerConnection: '/api/v1/broker/connection',
   brokerConnect: '/api/v1/broker/connect',
   brokerDisconnect: '/api/v1/broker/disconnect',
@@ -452,11 +541,13 @@ export const API_ROUTES = {
   positions: '/api/v1/positions',
   orders: '/api/v1/orders',
   trades: '/api/v1/trades',
+  tradeCycles: '/api/v1/trade-cycles',
   niftyQuote: '/api/v1/market/nifty',
   candles: '/api/v1/market/candles',
   optionChain: '/api/v1/market/option-chain',
   strategies: '/api/v1/strategies',
   activeStrategy: '/api/v1/strategies/active',
   dashboardOverview: '/api/v1/dashboard/overview',
+  analyticsPerformance: '/api/v1/analytics/performance',
   systemEvents: '/api/v1/system/events',
 } as const;

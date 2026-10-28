@@ -52,6 +52,36 @@ async def switch_trading_mode(
     return success_response(updated_status, request=request, data_source="DATABASE")
 
 
+@router.post("/engine-state", response_model=ApiResponse[SystemStatusResponse])
+async def transition_engine_state(
+    request: Request,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[SystemStatusResponse]:
+    """Transition engine state (e.g. PAUSED, RUNNING, READY, STOPPED)."""
+    raw_state = payload.get("state")
+    reason = payload.get("reason", f"Manual transition by {user.email}")
+
+    try:
+        from app.models.enums import EngineState
+        new_state = EngineState(raw_state)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid engine state: '{raw_state}'",
+        )
+
+    await StateService.transition_engine_state(
+        new_state=new_state,
+        reason=reason,
+        db=db,
+    )
+
+    updated_status = await StateService.get_system_status(db=db)
+    return success_response(updated_status, request=request, data_source="DATABASE")
+
+
 @router.get("/events", response_model=PaginatedResponse[SystemEvent])
 async def get_system_events(
     request: Request,
