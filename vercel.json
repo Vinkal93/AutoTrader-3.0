@@ -15,11 +15,13 @@
     },
     "api": {
       "root": "services/api",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "entrypoint": "app/main.py"
     },
     "trading_worker": {
       "root": "services/trading_worker",
       "runtime": "python",
+      "entrypoint": "worker/main.py",
       "bindings": [
         {
           "type": "service",

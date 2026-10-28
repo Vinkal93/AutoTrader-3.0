@@ -49,6 +49,23 @@ async def main():
         logger.info("Worker shutdown complete.")
 
 
+# ASGI & HTTP entry points for Vercel service runtime
+async def app(scope, receive, send):
+    if scope.get("type") == "http":
+        await send({
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"application/json"]],
+        })
+        await send({
+            "type": "http.response.body",
+            "body": b'{"status":"ok","service":"trading_worker"}',
+        })
+
+
+handler = app
+
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())
