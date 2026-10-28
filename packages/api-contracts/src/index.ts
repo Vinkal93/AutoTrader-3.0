@@ -62,6 +62,33 @@ export const OrderStatus = {
 } as const;
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
+export const OrderLifecycleState = {
+  CREATED: 'CREATED',
+  VALIDATING: 'VALIDATING',
+  AWAITING_SUBMISSION: 'AWAITING_SUBMISSION',
+  SUBMITTING: 'SUBMITTING',
+  ACKNOWLEDGED: 'ACKNOWLEDGED',
+  OPEN: 'OPEN',
+  PARTIALLY_FILLED: 'PARTIALLY_FILLED',
+  FILLED: 'FILLED',
+  CANCEL_PENDING: 'CANCEL_PENDING',
+  CANCELLED: 'CANCELLED',
+  REJECTED: 'REJECTED',
+  UNKNOWN: 'UNKNOWN',
+  RECONCILING: 'RECONCILING',
+} as const;
+export type OrderLifecycleState = (typeof OrderLifecycleState)[keyof typeof OrderLifecycleState];
+
+export const MarketTrendState = {
+  BULLISH: 'BULLISH',
+  BEARISH: 'BEARISH',
+  SIDEWAYS: 'SIDEWAYS',
+  INSUFFICIENT_DATA: 'INSUFFICIENT_DATA',
+  STALE_DATA: 'STALE_DATA',
+  MARKET_CLOSED: 'MARKET_CLOSED',
+} as const;
+export type MarketTrendState = (typeof MarketTrendState)[keyof typeof MarketTrendState];
+
 export const OptionType = {
   CE: 'CE',
   PE: 'PE',
@@ -527,6 +554,94 @@ export interface EngineStateTransitionRequest {
   reason?: string;
 }
 
+// ---- Trend Analysis (Task 5) ----
+
+export interface TrendAnalysis {
+  state: MarketTrendState;
+  trendDirection: 'BULLISH' | 'BEARISH' | 'SIDEWAYS' | 'NEUTRAL';
+  ema9: number | null;
+  ema21: number | null;
+  emaSpread: number | null;
+  candleConfirmation: boolean;
+  trendStrength: 'STRONG' | 'MODERATE' | 'WEAK' | 'NONE';
+  lastCandleTimestamp: string | null;
+  reasonCodes: string[];
+  evaluatedAt: string;
+}
+
+// ---- Smart Premium Scanner (Task 4) ----
+
+export interface ScannerConfig {
+  underlying: string;
+  premiumMin: string;
+  premiumMax: string;
+  preferredPremium: string;
+  direction: 'AUTO' | 'CE' | 'PE';
+  expiryDate?: string;
+  maxSpread: string;
+  minLiquidity: number;
+}
+
+export interface ScannerCandidate {
+  instrumentToken: string;
+  tradingSymbol: string;
+  optionType: OptionType;
+  strikePrice: number;
+  expiryDate: string;
+  ltp: number;
+  bidPrice: number;
+  askPrice: number;
+  bidAskSpread: number;
+  bidQuantity: number;
+  askQuantity: number;
+  volume: number;
+  openInterest: number;
+  lotSize: number;
+  tickSize: number;
+  isEligible: boolean;
+  rejectionReasons: string[];
+  rankScore: number;
+  selectionExplanation: string;
+}
+
+export interface ScannerResult {
+  status: 'FOUND' | 'NO_SUITABLE_CONTRACT' | 'MARKET_CLOSED' | 'DISCONNECTED';
+  evaluatedAt: string;
+  totalEvaluated: number;
+  eligibleCount: number;
+  selectedCandidate: ScannerCandidate | null;
+  candidates: ScannerCandidate[];
+  selectionReason: string;
+}
+
+// ---- Order Validation & Pre-Flight Checks (Task 6 & 7) ----
+
+export interface OrderValidationRequest {
+  instrumentToken: string;
+  tradingSymbol: string;
+  optionType: OptionType;
+  side: OrderSide;
+  quantity: number;
+  price: string;
+  targetPrice: string;
+  stopLossPrice: string;
+}
+
+export interface OrderValidationResult {
+  isValid: boolean;
+  requiredMargin: string;
+  estimatedCharges: ChargeBreakdown;
+  estimatedGrossProfit: string;
+  estimatedGrossLoss: string;
+  estimatedNetProfit: string;
+  estimatedNetLoss: string;
+  targetTickAligned: boolean;
+  stopLossTickAligned: boolean;
+  quantityLotAligned: boolean;
+  validationErrors: string[];
+  warnings: string[];
+}
+
 // ---- API Route Definitions ----
 
 export const API_ROUTES = {
@@ -545,6 +660,10 @@ export const API_ROUTES = {
   niftyQuote: '/api/v1/market/nifty',
   candles: '/api/v1/market/candles',
   optionChain: '/api/v1/market/option-chain',
+  marketScanner: '/api/v1/market/scanner',
+  marketTrend: '/api/v1/market/trend',
+  ordersValidate: '/api/v1/orders/validate',
+  ordersEmergencyExit: '/api/v1/orders/emergency-exit',
   strategies: '/api/v1/strategies',
   activeStrategy: '/api/v1/strategies/active',
   dashboardOverview: '/api/v1/dashboard/overview',

@@ -138,6 +138,49 @@ async def test_endpoint_contracts_and_security_headers():
         assert body["success"] is True
         assert body["data"]["engineState"] == "PAUSED"
 
+        # 17. Scanner
+        res = await client.get("/api/v1/market/scanner")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert "status" in body["data"]
+        assert "selectionReason" in body["data"]
+
+        # 18. Market Trend
+        res = await client.get("/api/v1/market/trend")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert "state" in body["data"]
+        assert "trendDirection" in body["data"]
+
+        # 19. Order Validation
+        order_payload = {
+            "instrumentToken": "26001",
+            "tradingSymbol": "NIFTY26OCT24500CE",
+            "optionType": "CE",
+            "side": "BUY",
+            "quantity": 25,
+            "price": "42.50",
+            "targetPrice": "43.50",
+            "stopLossPrice": "39.50",
+        }
+        res = await client.post("/api/v1/orders/validate", json=order_payload)
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert body["data"]["isValid"] is True
+        assert body["data"]["targetTickAligned"] is True
+        assert body["data"]["quantityLotAligned"] is True
+        assert "estimatedCharges" in body["data"]
+
+        # 20. Emergency Exit
+        res = await client.post("/api/v1/orders/emergency-exit")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert body["data"]["status"] == "EMERGENCY_HALT_ACTIVE"
+
 
 @pytest.mark.asyncio
 async def test_mode_switch_blocked_for_live_when_risk_unconfigured():

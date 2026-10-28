@@ -19,6 +19,12 @@ import {
   type PerformanceMetrics,
   type RiskAllowance,
   type CandlesResponse,
+  type OptionChainResponse,
+  type TrendAnalysis,
+  type ScannerResult,
+  type ScannerConfig,
+  type OrderValidationRequest,
+  type OrderValidationResult,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -35,6 +41,9 @@ export const queryKeys = {
   performanceMetrics: (timeframe: string) => ['performanceMetrics', timeframe] as const,
   riskAllowance: ['riskAllowance'] as const,
   candles: (symbol: string, interval: string) => ['candles', symbol, interval] as const,
+  optionChain: (symbol: string, expiry?: string) => ['optionChain', symbol, expiry] as const,
+  marketTrend: ['marketTrend'] as const,
+  marketScanner: (params?: Partial<ScannerConfig>) => ['marketScanner', params] as const,
   niftyQuote: ['niftyQuote'] as const,
   strategies: ['strategies'] as const,
   activeStrategy: ['activeStrategy'] as const,
@@ -303,6 +312,86 @@ export function useTransitionEngineState() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+// Phase 3: Market Scanner & Terminal Hooks
+
+export function useOptionChain(symbol = 'NIFTY', expiry?: string, refetchInterval: number | false = 5000) {
+  return useQuery({
+    queryKey: queryKeys.optionChain(symbol, expiry),
+    queryFn: async () => {
+      const url = expiry
+        ? `${API_ROUTES.optionChain}?symbol=${symbol}&expiry=${expiry}`
+        : `${API_ROUTES.optionChain}?symbol=${symbol}`;
+      const res = await api.get<OptionChainResponse>(url);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+export function useMarketTrend(symbol = 'NIFTY', interval = '5m', refetchInterval: number | false = 5000) {
+  return useQuery({
+    queryKey: queryKeys.marketTrend,
+    queryFn: async () => {
+      const res = await api.get<TrendAnalysis>(`${API_ROUTES.marketTrend}?symbol=${symbol}&interval=${interval}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+export function useMarketScanner(params?: Partial<ScannerConfig>, refetchInterval: number | false = 5000) {
+  return useQuery({
+    queryKey: queryKeys.marketScanner(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.underlying) queryParams.set('underlying', params.underlying);
+      if (params?.premiumMin) queryParams.set('premium_min', params.premiumMin);
+      if (params?.premiumMax) queryParams.set('premium_max', params.premiumMax);
+      if (params?.preferredPremium) queryParams.set('preferred_premium', params.preferredPremium);
+      if (params?.direction) queryParams.set('direction', params.direction);
+      if (params?.expiryDate) queryParams.set('expiry', params.expiryDate);
+      if (params?.maxSpread) queryParams.set('max_spread', params.maxSpread);
+      if (params?.minLiquidity) queryParams.set('min_liquidity', String(params.minLiquidity));
+
+      const qs = queryParams.toString();
+      const url = qs ? `${API_ROUTES.marketScanner}?${qs}` : API_ROUTES.marketScanner;
+      const res = await api.get<ScannerResult>(url);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+export function useValidateOrder() {
+  return useMutation({
+    mutationFn: async (payload: OrderValidationRequest) => {
+      const res = await api.post<OrderValidationResult>(API_ROUTES.ordersValidate, payload);
+      return res.data;
+    },
+  });
+}
+
+export function useEmergencyExit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post<{ status: string; message: string; haltedAt: string }>(
+        API_ROUTES.ordersEmergencyExit
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      queryClient.invalidateQueries({ queryKey: queryKeys.positions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemEvents });
     },
   });
 }

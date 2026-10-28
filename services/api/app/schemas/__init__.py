@@ -59,6 +59,13 @@ from app.schemas.analytics import (
     RiskAllowance,
     TradeCycleDetail,
 )
+from app.schemas.market_scanner import (
+    OrderValidationRequest,
+    OrderValidationResult,
+    ScannerCandidate,
+    ScannerResult,
+    TrendAnalysis,
+)
 
 __all__ = [
     "CamelModel",
@@ -104,4 +111,9 @@ __all__ = [
     "PerformanceMetrics",
     "RiskAllowance",
     "EngineStateTransitionRequest",
+    "ScannerCandidate",
+    "ScannerResult",
+    "TrendAnalysis",
+    "OrderValidationRequest",
+    "OrderValidationResult",
 ]

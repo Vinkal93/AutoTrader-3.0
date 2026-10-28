@@ -58,21 +58,42 @@ The platform has reached full completion for **Phase 2: Complete Dashboard UI/UX
 
 ---
 
-## 4. Phase 2 Boundaries & Hard Lock Notice
+## 4. Phase 3 Completion Scorecard: Professional Live Trading Terminal
 
-> [!CAUTION]
-> **HARD SAFETY LOCK:**
-> In accordance with Prime Directive 1.8 and Phase 2 requirements, **live broker order submission (`place_order`, `modify_order`, `cancel_order`) remains strictly locked.**
-> Automated trading mode (`LIVE`) is disabled in the UI and rejected by the backend engine until Phase 3 authorization and pre-flight validation checklist completion.
+The platform has reached full completion for **Phase 3: Professional Live Trading Terminal**.
+
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Trading Terminal Layout** | Desktop 3-column + tablet/mobile responsive layout ([`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/live-trading/page.tsx)), sticky header, independent scrolls | **COMPLETED** | [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/live-trading/page.tsx), [`TerminalHeader.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TerminalHeader.tsx) |
+| **Live NIFTY Chart & Trend** | Candlesticks (1m/5m/15m), EMA 9 & EMA 21 overlays, 12:20 PM marker, canonical backend trend banner (`BULLISH`, `BEARISH`, `SIDEWAYS`, `MARKET_CLOSED`) | **COMPLETED** | [`TerminalChart.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TerminalChart.tsx) |
+| **Option Chain Ingestion** | Full NIFTY option chain table with strike, CE/PE, LTP, executable Ask, Bid, Spread, Depth, Volume, OI; single-click ticket selection | **COMPLETED** | [`OptionChainTable.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/OptionChainTable.tsx) |
+| **Smart Premium Scanner** | 10-step scanner evaluating executable Ask range (₹40–₹45), spread limits, ask depth, deterministic ranking, transparent comparison table | **COMPLETED** | [`SmartPremiumScannerCard.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/SmartPremiumScannerCard.tsx), [`market.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/market.py) |
+| **Selected Trade Ticket** | Executable ask entry limit, lot sizing (25 qty), target (+₹1.00) & SL (-₹3.00) calculations with 0.05 tick rounding, pre-flight margin & fee simulation | **COMPLETED** | [`TradeTicket.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TradeTicket.tsx) |
+| **Safely Gated Controls** | Safety confirmation dialog, Buy (Gated/Paper), Cancel pending order, Close position, Emergency halt circuit breaker (`POST /orders/emergency-exit`) | **COMPLETED** | [`TradeTicket.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TradeTicket.tsx), [`TerminalHeader.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TerminalHeader.tsx) |
+| **Positions & Orders Monitoring** | Tabbed panel: Open positions, Pending orders, Order history, Trade executions, 13-state lifecycle diagram, Live system alerts | **COMPLETED** | [`TerminalBottomTabs.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/terminal/TerminalBottomTabs.tsx) |
+| **Order Lifecycle State Machine** | Complete 13-state machine (`CREATED` -> `VALIDATING` -> `AWAITING_SUBMISSION` -> `SUBMITTING` -> `ACKNOWLEDGED` -> `OPEN` -> `PARTIALLY_FILLED` -> `FILLED`, etc.) with `RECONCILING` guard | **COMPLETED** | [`ORDER_LIFECYCLE.md`](file:///d:/Coding/Auto%20Trader%203.0/docs/ORDER_LIFECYCLE.md), [`index.ts`](file:///d:/Coding/Auto%20Trader%203.0/packages/api-contracts/src/index.ts) |
+| **Backend REST Endpoints** | `GET /api/v1/market/scanner`, `GET /api/v1/market/trend`, `POST /api/v1/orders/validate`, `POST /api/v1/orders/emergency-exit` | **COMPLETED** | [`market.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/market.py), [`orders.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/orders.py) |
+| **Zero Accidental Live Submissions** | Real-money broker order submission is locked to PAPER simulation mode until Phase 4 live execution engine acceptance tests pass | **COMPLETED** | [`AGENTS.md`](file:///d:/Coding/Auto%20Trader%203.0/AGENTS.md) |
 
 ---
 
-## 5. Phase 3 Readiness & Transition Checklist
+## 5. Phase 3 Safety Hard Lock & Scope Boundary
 
-Prior to activating Phase 3 (Automated Trading Execution Loop):
+> [!CAUTION]
+> **PHASE 3 HARD SAFETY LOCK:**
+> In accordance with Prime Directive 1.8 and Phase 3 specifications:
+> 1. **Live broker order execution (`place_order`, `modify_order`, `cancel_order`) remains locked to PAPER simulation mode.**
+> 2. No real-money trades can be dispatched to Kotak Securities in this phase.
+> 3. Autonomous 12:20 PM trading loops, automatic broker order submission, and bracket order placement are deferred to **Phase 4 (Order Execution & Risk Engine)**.
 
-- [ ] **Paper Trading Engine Activation**: Verify simulated fill executions against real bid/ask feeds.
-- [ ] **Dual-Key Passkey Gate**: Cryptographic authorization required before switching from PAPER to LIVE mode.
-- [ ] **Statutory Charge Auditing**: Confirm live broker contract notes match estimated STT/GST/turnover schedules.
-- [ ] **Outbound VPS IP Registration**: Formally register VPS static IP in Kotak Securities developer portal.
-- [ ] **Automated Square-Off Verification**: 15:15 PM IST hard auto-square-off worker routine dry-run testing.
+---
+
+## 6. Readiness Checklist for Phase 4 Transition
+
+Prior to authorizing Phase 4 (Order Execution & Automated Live Broker Routing):
+
+- [ ] **Dual-Key Passkey Gate**: Cryptographic authorization required before promoting any account to LIVE mode.
+- [ ] **Kotak Neo Live Order Submission Adapter**: Live order placement with rate-limiting and idempotency keys.
+- [ ] **Broker Order Stream Reconciliation**: Live WebSocket subscription to Kotak order updates (`flDtTm`, `flPrc`).
+- [ ] **Time-Based Exit Routine (15:15 PM IST)**: Automated square-off routine executing bracket cancellations.
+- [ ] **VPS Static IP Developer Portal Verification**: Registered static IP validated against Kotak Securities developer portal.

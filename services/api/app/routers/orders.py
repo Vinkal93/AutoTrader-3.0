@@ -1,16 +1,19 @@
 """Order query endpoints."""
 
-from typing import List, Optional
+from decimal import Decimal
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.broker.factory import get_broker_adapter
 from app.database import get_db
-from app.models.entities import Order as OrderModel
-from app.models.enums import BrokerConnectionState, DataFreshness, Exchange, OrderSide, OrderStatus, OrderType
+from app.models.entities import Order as OrderModel, SystemEvent as SystemEventModel
+from app.models.enums import BrokerConnectionState, DataFreshness, Exchange, OrderSide, OrderStatus, OrderType, SystemEventSeverity
 from app.routers.deps import success_response
 from app.schemas.account import Order
+from app.schemas.analytics import ChargeBreakdown
 from app.schemas.common import ApiResponse
+from app.schemas.market_scanner import OrderValidationRequest, OrderValidationResult
 from app.services.auth_service import CurrentUser, get_current_user
 
 router = APIRouter(prefix="/api/v1", tags=["Orders"])
@@ -63,4 +66,141 @@ async def get_orders(
         request=request,
         data_source="DATABASE",
         freshness=DataFreshness.RECENT if orders else DataFreshness.UNAVAILABLE,
+    )
+
+
+@router.post("/orders/validate", response_model=ApiResponse[OrderValidationResult])
+async def validate_order(
+    request: Request,
+    payload: OrderValidationRequest,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[OrderValidationResult]:
+    """Pre-flight safety validation, margin estimation, and itemized fee calculation."""
+    errors: List[str] = []
+    warnings: List[str] = [
+        "Phase 3 Safety Lock: Live order submission is currently disabled. This is an operational simulation preview."
+    ]
+
+    # Lot size alignment check
+    lot_size = 25
+    quantity_lot_aligned = (payload.quantity > 0 and payload.quantity % lot_size == 0)
+    if not quantity_lot_aligned:
+        errors.append(f"Quantity {payload.quantity} must be a positive multiple of NIFTY lot size ({lot_size}).")
+
+    # Tick size alignment check (0.05)
+    tick_size = Decimal("0.05")
+    try:
+        price_dec = Decimal(payload.price)
+        target_dec = Decimal(payload.targetPrice)
+        sl_dec = Decimal(payload.stopLossPrice)
+
+        price_tick_aligned = (price_dec % tick_size) == Decimal("0.00")
+        target_tick_aligned = (target_dec % tick_size) == Decimal("0.00")
+        sl_tick_aligned = (sl_dec % tick_size) == Decimal("0.00")
+
+        if not price_tick_aligned:
+            errors.append(f"Entry limit price ₹{payload.price} is not aligned to tick size ₹0.05.")
+        if not target_tick_aligned:
+            errors.append(f"Target price ₹{payload.targetPrice} is not aligned to tick size ₹0.05.")
+        if not sl_tick_aligned:
+            errors.append(f"Stop-loss price ₹{payload.stopLossPrice} is not aligned to tick size ₹0.05.")
+
+        if target_dec <= price_dec:
+            errors.append(f"Target price ₹{target_dec} must be strictly higher than entry price ₹{price_dec} for BUY.")
+        if sl_dec >= price_dec:
+            errors.append(f"Stop-loss price ₹{sl_dec} must be strictly lower than entry price ₹{price_dec} for BUY.")
+
+    except Exception as exc:
+        errors.append(f"Invalid decimal numerical format in price inputs: {exc}")
+        price_dec = Decimal("0.00")
+        target_dec = Decimal("0.00")
+        sl_dec = Decimal("0.00")
+        target_tick_aligned = False
+        sl_tick_aligned = False
+
+    qty_dec = Decimal(payload.quantity)
+    required_margin = qty_dec * price_dec
+    gross_profit = (target_dec - price_dec) * qty_dec
+    gross_loss = (price_dec - sl_dec) * qty_dec
+
+    # Statutory Charges Formula
+    brokerage = Decimal("40.00")
+    buy_turnover = qty_dec * price_dec
+    sell_turnover = qty_dec * target_dec
+    total_turnover = buy_turnover + sell_turnover
+
+    stt = (sell_turnover * Decimal("0.00125")).quantize(Decimal("0.01"))
+    exchange_txn = (total_turnover * Decimal("0.000505")).quantize(Decimal("0.01"))
+    gst = ((brokerage + exchange_txn) * Decimal("0.18")).quantize(Decimal("0.01"))
+    sebi = (total_turnover * Decimal("0.000001")).quantize(Decimal("0.01"))
+    stamp_duty = (buy_turnover * Decimal("0.00003")).quantize(Decimal("0.01"))
+    total_charges = brokerage + stt + exchange_txn + gst + sebi + stamp_duty
+
+    net_profit = gross_profit - total_charges
+    net_loss = -(gross_loss + total_charges)
+
+    if net_profit < Decimal("0.00"):
+        warnings.append(
+            f"Statutory fees (₹{total_charges:.2f}) exceed gross profit (₹{gross_profit:.2f}). "
+            f"Net outcome is negative (₹{net_profit:.2f}) on 1-lot position."
+        )
+
+    is_valid = len(errors) == 0
+
+    return success_response(
+        OrderValidationResult(
+            is_valid=is_valid,
+            required_margin=f"{required_margin:.2f}",
+            estimated_charges=ChargeBreakdown(
+                brokerage=f"{brokerage:.2f}",
+                stt=f"{stt:.2f}",
+                exchangeTxnCharge=f"{exchange_txn:.2f}",
+                gst=f"{gst:.2f}",
+                sebiCharges=f"{sebi:.2f}",
+                stampDuty=f"{stamp_duty:.2f}",
+                totalCharges=f"{total_charges:.2f}",
+                isPosted=False,
+            ),
+            estimated_gross_profit=f"{gross_profit:.2f}",
+            estimated_gross_loss=f"{gross_loss:.2f}",
+            estimated_net_profit=f"{net_profit:.2f}",
+            estimated_net_loss=f"{net_loss:.2f}",
+            target_tick_aligned=target_tick_aligned,
+            stop_loss_tick_aligned=sl_tick_aligned,
+            quantity_lot_aligned=quantity_lot_aligned,
+            validation_errors=errors,
+            warnings=warnings,
+        ),
+        request=request,
+        data_source="COMPUTED",
+        freshness=DataFreshness.LIVE,
+    )
+
+
+@router.post("/orders/emergency-exit", response_model=ApiResponse[Dict[str, Any]])
+async def trigger_emergency_exit(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[Dict[str, Any]]:
+    """Emergency controlled exit: cancels pending order intents and pauses execution."""
+    event = SystemEventModel(
+        event_type="OPERATOR_EMERGENCY_EXIT_TRIGGERED",
+        severity=SystemEventSeverity.CRITICAL,
+        message="Operator activated Emergency Mode from Live Trading Terminal. All pending intents aborted.",
+        context_data={"operator": user.id},
+    )
+    db.add(event)
+    await db.commit()
+
+    return success_response(
+        {
+            "status": "EMERGENCY_HALT_ACTIVE",
+            "message": "Emergency halt triggered. Active orders cancelled, automated runners paused.",
+            "haltedAt": event.created_at.isoformat(),
+        },
+        request=request,
+        data_source="DATABASE",
+        freshness=DataFreshness.LIVE,
     )

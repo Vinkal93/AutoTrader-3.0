@@ -26,6 +26,8 @@ const requiredEnums = [
   'OrderSide',
   'OrderType',
   'OrderStatus',
+  'OrderLifecycleState',
+  'MarketTrendState',
   'OptionType',
   'InstrumentType',
   'Exchange',
@@ -42,7 +44,7 @@ for (const enumName of requiredEnums) {
   console.log(`✓ Enum verified: ${enumName}`);
 }
 
-// 2. Verify all 14 required Phase 1 API routes exist
+// 2. Verify all required API routes exist
 const requiredRoutes = [
   '/api/v1/health',
   '/api/v1/system/status',
@@ -54,9 +56,13 @@ const requiredRoutes = [
   '/api/v1/market/nifty',
   '/api/v1/market/candles',
   '/api/v1/market/option-chain',
+  '/api/v1/market/scanner',
+  '/api/v1/market/trend',
+  '/api/v1/orders/validate',
   '/api/v1/strategies',
   '/api/v1/strategies/active',
   '/api/v1/dashboard/overview',
+  '/api/v1/analytics/performance',
   '/api/v1/system/events',
 ];
 
