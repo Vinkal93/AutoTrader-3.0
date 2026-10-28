@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -17,9 +18,47 @@ export interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
+  const pathname = usePathname();
   const { sidebarCollapsed, confirmDialog, closeConfirmDialog } = useUIStore();
   const { data: broker } = useBrokerConnection();
   const { data: health } = useHealth();
+
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname.startsWith('/pricing') ||
+    pathname.startsWith('/how-it-works') ||
+    pathname.startsWith('/terms') ||
+    pathname.startsWith('/privacy') ||
+    pathname.startsWith('/risk-disclosure') ||
+    pathname.startsWith('/refund-policy') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register');
+
+  if (isPublicRoute) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col font-sans text-neutral-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+        {children}
+        {confirmDialog && (
+          <ConfirmDialog
+            isOpen={confirmDialog.isOpen}
+            title={confirmDialog.title}
+            description={confirmDialog.description}
+            confirmText={confirmDialog.confirmText}
+            cancelText={confirmDialog.cancelText}
+            variant={confirmDialog.variant}
+            onConfirm={() => {
+              confirmDialog.onConfirm?.();
+              closeConfirmDialog();
+            }}
+            onClose={() => {
+              confirmDialog.onCancel?.();
+              closeConfirmDialog();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   const brokerState = broker?.state ?? BrokerConnectionState.NOT_CONFIGURED;
   const isHealthy = health?.status === 'healthy';

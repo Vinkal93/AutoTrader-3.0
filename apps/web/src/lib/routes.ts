@@ -30,7 +30,7 @@ export const APP_ROUTES: RouteItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    href: '/',
+    href: '/dashboard',
     icon: LayoutDashboard,
     category: 'core',
   },
