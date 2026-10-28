@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -12,6 +12,7 @@ import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { BrokerConnectionState } from '@autotrader/api-contracts';
 import { ShieldCheck, ShieldAlert, Clock } from 'lucide-react';
 import { formatISTDateTime } from '@/lib/formatters';
+import { useAuth } from '@/lib/auth/auth-context';
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -19,6 +20,8 @@ export interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const { sidebarCollapsed, confirmDialog, closeConfirmDialog } = useUIStore();
   const { data: broker } = useBrokerConnection();
   const { data: health } = useHealth();
@@ -32,9 +35,46 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     pathname.startsWith('/risk-disclosure') ||
     pathname.startsWith('/refund-policy') ||
     pathname.startsWith('/login') ||
-    pathname.startsWith('/register');
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/auth/callback');
 
-  if (isPublicRoute) {
+  const isOnboardingRoute = pathname.startsWith('/onboarding');
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    // 1. If user is authenticated and visits login/signup, redirect to dashboard or safe return URL
+    if (user && (pathname === '/login' || pathname === '/signup')) {
+      if (!user.isOnboarded) {
+        router.push('/onboarding');
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        const safeRedirect = params.get('redirect');
+        if (safeRedirect && safeRedirect.startsWith('/') && !safeRedirect.startsWith('//')) {
+          router.push(safeRedirect);
+        } else {
+          router.push('/dashboard');
+        }
+      }
+      return;
+    }
+
+    // 2. If user is authenticated and not onboarded, redirect from private routes to /onboarding
+    if (user && !user.isOnboarded && !isPublicRoute && !isOnboardingRoute) {
+      router.push('/onboarding');
+      return;
+    }
+
+    // 3. If user is onboarded and tries to access /onboarding, redirect to /dashboard
+    if (user && user.isOnboarded && isOnboardingRoute) {
+      router.push('/dashboard');
+      return;
+    }
+  }, [user, authLoading, pathname, isPublicRoute, isOnboardingRoute, router]);
+
+  if (isPublicRoute || isOnboardingRoute) {
     return (
       <div className="min-h-screen bg-white flex flex-col font-sans text-neutral-900 antialiased selection:bg-blue-100 selection:text-blue-900">
         {children}

@@ -74,13 +74,13 @@ export const PublicHeader: React.FC = () => {
           {/* Desktop Action Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
-              href="/dashboard"
+              href="/login"
               className="px-4 py-2 text-sm font-semibold text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
             >
               Sign In
             </Link>
             <Link
-              href="/dashboard"
+              href="/signup"
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-sm shadow-blue-600/20 hover:shadow-md hover:shadow-blue-600/30 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
             >
               Get Started
@@ -91,7 +91,7 @@ export const PublicHeader: React.FC = () => {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-2">
             <Link
-              href="/dashboard"
+              href="/login"
               className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg"
             >
               Sign In
@@ -126,14 +126,14 @@ export const PublicHeader: React.FC = () => {
           </nav>
           <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2">
             <Link
-              href="/dashboard"
+              href="/login"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full text-center py-2.5 text-sm font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors"
             >
               Trader Sign In
             </Link>
             <Link
-              href="/dashboard"
+              href="/signup"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full text-center py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
             >

@@ -23,11 +23,14 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Cpu,
+  LogOut,
 } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
+import { useAuth } from '@/lib/auth/auth-context';
 import { formatCurrency, formatISTTime } from '@/lib/formatters';
 
 export const Topbar: React.FC = () => {
+  const { user, logout } = useAuth();
   const { data: systemStatus } = useSystemStatus();
   const { data: broker } = useBrokerConnection();
   const { data: quote } = useNiftyQuote();
@@ -214,15 +217,28 @@ export const Topbar: React.FC = () => {
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* Authenticated User Profile Pill */}
+        {/* Authenticated User Profile Pill & Sign Out */}
         <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center font-bold text-xs shrink-0">
-            TR
+            {user?.fullName ? user.fullName.substring(0, 2).toUpperCase() : 'TR'}
           </div>
-          <div className="hidden 2xl:flex flex-col">
-            <span className="text-xs font-semibold text-neutral-900 leading-none">Trader</span>
-            <span className="text-[10px] text-neutral-400 font-medium">Owner</span>
+          <div className="hidden xl:flex flex-col">
+            <span className="text-xs font-semibold text-neutral-900 leading-none">
+              {user?.fullName || 'Trader'}
+            </span>
+            <span className="text-[10px] text-neutral-400 font-medium">
+              {user?.email || 'Owner'}
+            </span>
           </div>
+          <button
+            type="button"
+            onClick={() => logout()}
+            title="Sign out of workspace"
+            aria-label="Sign out"
+            className="p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-neutral-100 rounded-lg transition-colors ml-1"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

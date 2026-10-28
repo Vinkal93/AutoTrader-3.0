@@ -1146,4 +1146,66 @@ export const API_ROUTES = {
   recoveryReconcile: '/api/v1/recovery/reconcile',
   systemFailureModes: '/api/v1/system/failure-modes',
   systemLiveAuthorization: '/api/v1/system/live-authorization',
+
+  // Auth & Profile Routes
+  authSignup: '/api/v1/auth/signup',
+  authLogin: '/api/v1/auth/login',
+  authSession: '/api/v1/auth/session',
+  authLogout: '/api/v1/auth/logout',
+  authForgotPassword: '/api/v1/auth/forgot-password',
+  authResetPassword: '/api/v1/auth/reset-password',
+  userProfile: '/api/v1/user/profile',
+  userPreferences: '/api/v1/user/preferences',
+  onboardingComplete: '/api/v1/user/onboarding/complete',
 } as const;
+
+// ---- Auth & Profile Models ----
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  email: string;
+  fullName: string | null;
+  avatarUrl?: string | null;
+  phoneNumber?: string | null;
+  panNumberMasked?: string | null;
+  kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  riskAppetite: 'CONSERVATIVE' | 'MODERATE' | 'AGGRESSIVE';
+  maxCapitalAllocation: number;
+  isOnboarded: boolean;
+  onboardedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  theme: 'light' | 'dark' | 'system';
+  defaultLotSize: number;
+  soundEnabled: boolean;
+  defaultBrokerId: string | null;
+}
+
+export interface AuthSession {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: number;
+  user: {
+    id: string;
+    email: string;
+    fullName?: string | null;
+    avatarUrl?: string | null;
+    role: string;
+    isOnboarded: boolean;
+  };
+}
+
+export interface OnboardingPayload {
+  selectedBrokerId?: string | null;
+  connectBrokerNow: boolean;
+  theme?: 'light' | 'dark';
+  defaultLotSize?: number;
+  riskAppetite?: 'CONSERVATIVE' | 'MODERATE' | 'AGGRESSIVE';
+  brokerCredentials?: Record<string, string>;
+}
