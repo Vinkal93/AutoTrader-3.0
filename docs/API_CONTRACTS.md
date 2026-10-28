@@ -1,335 +1,166 @@
-# API Contracts & Endpoint Specifications (API_CONTRACTS.md)
+# API Contracts Specification (API_CONTRACTS.md)
+## NIFTY Auto Trader 3.0 — Multi-Tenant, Multi-Broker Trading SaaS
 
-> Version 1 REST API specification for **NIFTY Auto Trader 3.0**. All interfaces and response shapes strictly mirror the shared contracts defined in [`packages/api-contracts`](file:///d:/Coding/Auto%20Trader%203.0/packages/api-contracts/src/index.ts).
+> Canonical REST API routes, shared envelopes, data types, and status enumerations for **NIFTY Auto Trader 3.0**.
 
 ---
 
-## 1. Unified Response Envelope Standard
+## 1. Unified Response Envelope
 
-All v1 endpoints return a deterministic JSON envelope modeled after the TypeScript `ApiResponse<T>` interface:
+All API endpoints return data wrapped in the canonical `ApiResponse<T>` envelope or `PaginatedResponse<T>` envelope.
 
-```typescript
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: ApiError;
-  meta: ResponseMeta;
+### 1.1 Single Resource Envelope (`ApiResponse<T>`)
+```json
+{
+  "success": true,
+  "data": { ... },
+  "error": null,
+  "meta": {
+    "requestId": "req_a1b2c3d4e5f6",
+    "timestamp": "2026-10-28T10:15:00.000Z",
+    "asOf": "2026-10-28T10:15:00.000Z",
+    "lastSyncedAt": "2026-10-28T10:15:00.000Z",
+    "dataSource": "BROKER",
+    "freshness": "LIVE"
+  }
 }
 ```
 
-### 1.1 Envelope Components
-
-#### `meta` Object (`ResponseMeta`)
-Every request receives tracing and data provenance metadata:
+### 1.2 Paginated Resource Envelope (`PaginatedResponse<T>`)
 ```json
 {
-  "requestId": "req_01HV8K8N...",
-  "timestamp": "2026-10-28T10:30:00.123Z",
-  "asOf": "2026-10-28T10:29:58.450Z",
-  "lastSyncedAt": "2026-10-28T10:29:55.000Z",
-  "dataSource": "BROKER",
-  "freshness": "LIVE"
-}
-```
-
-#### `freshness` Indicator Contract
-The frontend strictly relies on the `meta.freshness` enum to colorize telemetry widgets:
-- **`LIVE`**: Data obtained directly from broker within the last 5 seconds.
-- **`RECENT`**: Cached data aged between 5 seconds and 60 seconds.
-- **`STALE`**: Data older than 60 seconds (e.g., broker feed degraded).
-- **`UNAVAILABLE`**: Broker disconnected, unconfigured, or error returned.
-
-#### `error` Object (`ApiError`)
-Returned when `success: false`:
-```json
-{
-  "code": "BROKER_SESSION_EXPIRED",
-  "message": "The active Kotak Neo broker session has expired. Please re-authenticate.",
-  "details": {
-    "broker": "KOTAK_NEO",
-    "expiredAt": "2026-10-28T09:15:00Z"
+  "success": true,
+  "data": [ ... ],
+  "error": null,
+  "meta": { ... },
+  "pagination": {
+    "page": 1,
+    "pageSize": 50,
+    "totalItems": 142,
+    "totalPages": 3
   }
 }
 ```
 
 ---
 
-## 2. HTTP Status Codes & Error Taxonomy
+## 2. Standardized Status Enumerations
 
-| HTTP Status | Error Code | Description |
-| :--- | :--- | :--- |
-| `200 OK` | — | Successful query or idempotent action. |
-| `201 Created` | — | Resource created (e.g., new strategy version). |
-| `400 Bad Request` | `VALIDATION_ERROR` | Schema validation error or missing required parameters. |
-| `401 Unauthorized` | `UNAUTHORIZED` | Missing or invalid Supabase JWT authentication token. |
-| `403 Forbidden` | `PHASE_1_ORDER_LOCK` | Attempted order execution blocked by Phase 1 safety lock. |
-| `404 Not Found` | `NOT_FOUND` | Resource (order, trade cycle, strategy) does not exist. |
-| `409 Conflict` | `LEADER_LOCK_CONFLICT` | Worker leader lock conflict or state machine precondition failed. |
-| `422 Unprocessable` | `INVALID_STRATEGY_CONFIG` | Strategy config violates risk limits or mathematical invariants. |
-| `429 Too Many Requests` | `RATE_LIMIT_EXCEEDED` | Exceeded 60 requests per minute per IP/user. |
-| `502 Bad Gateway` | `BROKER_API_ERROR` | Kotak Neo upstream API returned an error or timed out. |
-| `503 Service Unavailable` | `BROKER_DISCONNECTED` | Broker session is disconnected or static IP check failed. |
-
----
-
-## 3. Versioned Endpoint Catalog (v1)
-
-### 3.1 Health & Diagnostic Endpoints
-
-#### `GET /api/v1/health`
-Evaluates real-time health across subcomponents (Database, Broker connection, Worker heartbeat, Redis).
-- **Authentication**: None (Public healthcheck for container orchestrators).
-- **Response**: `ApiResponse<HealthResponse>`
-```json
-{
-  "success": true,
-  "data": {
-    "status": "healthy",
-    "version": "3.0.0",
-    "uptime": 14250,
-    "checks": {
-      "database": {
-        "status": "up",
-        "latencyMs": 2,
-        "lastCheckedAt": "2026-10-28T10:30:00Z"
-      },
-      "broker": {
-        "status": "up",
-        "latencyMs": 48,
-        "lastCheckedAt": "2026-10-28T10:29:59Z"
-      },
-      "worker": {
-        "status": "up",
-        "message": "Leader lock held by worker-1",
-        "lastCheckedAt": "2026-10-28T10:30:00Z"
-      },
-      "redis": {
-        "status": "up",
-        "latencyMs": 1,
-        "lastCheckedAt": "2026-10-28T10:30:00Z"
-      }
-    }
-  },
-  "meta": { "requestId": "req_01", "timestamp": "2026-10-28T10:30:00Z", "freshness": "LIVE" }
-}
+### 2.1 Genuine System & Broker Connection States (Rule 24)
+```typescript
+export const BrokerConnectionState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+  ACCESS_PENDING: 'ACCESS_PENDING',
+  LOADING: 'LOADING',
+  READY: 'READY',
+  STALE: 'STALE',
+  NOT_CONNECTED: 'NOT_CONNECTED',
+  ERROR: 'ERROR',
+  UNSUPPORTED: 'UNSUPPORTED',
+} as const;
 ```
 
-#### `GET /api/v1/system/status`
-Returns high-level system operating state, trading mode, and active leader worker.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<SystemStatusResponse>`
-
----
-
-### 3.2 Broker Management Endpoints
-
-#### `GET /api/v1/broker/connection`
-Queries real-time broker connection status, session validity, and static IP compliance.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<BrokerConnectionResponse>`
-```json
-{
-  "success": true,
-  "data": {
-    "state": "CONNECTED",
-    "brokerName": "Kotak Neo",
-    "connectedAt": "2026-10-28T09:00:15Z",
-    "sessionExpiresAt": "2026-10-28T23:59:59Z",
-    "marketFeedStatus": "CONNECTED",
-    "orderFeedStatus": "CONNECTED",
-    "reportApiStatus": "CONNECTED",
-    "staticIpCompliant": true,
-    "lastError": null
-  },
-  "meta": { "requestId": "req_02", "timestamp": "2026-10-28T10:30:00Z", "freshness": "LIVE" }
-}
+### 2.2 Supported Brokers
+```typescript
+export const SupportedBroker = {
+  KOTAK_NEO: 'KOTAK_NEO',
+  ZERODHA_KITE: 'ZERODHA_KITE',
+  UPSTOX: 'UPSTOX',
+  ANGEL_ONE: 'ANGEL_ONE',
+  DHAN: 'DHAN',
+  FYERS: 'FYERS',
+} as const;
 ```
 
-#### `POST /api/v1/broker/connect`
-Initiates 2FA authentication session using one-time TOTP.
-- **Authentication**: Bearer JWT.
-- **Request Body**:
-```json
-{
-  "totp": "582914"
-}
-```
-- **Response**: `ApiResponse<BrokerConnectionResponse>`
+### 2.3 Tenant Roles & Subscription Tiers
+```typescript
+export const TenantRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  TRADER: 'TRADER',
+  VIEWER: 'VIEWER',
+} as const;
 
-#### `POST /api/v1/broker/disconnect`
-Terminates active broker session tokens.
-- **Authentication**: Bearer JWT.
-
----
-
-### 3.3 Account & Position Telemetry Endpoints
-
-#### `GET /api/v1/account/funds`
-Retrieves live available cash, utilized margin, and mark-to-market P&L.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<AccountFundsResponse>`
-```json
-{
-  "success": true,
-  "data": {
-    "availableCash": "245000.5000",
-    "usedMargin": "45200.0000",
-    "availableMargin": "199800.5000",
-    "totalCollateral": "0.0000",
-    "unrealizedPnl": "1250.0000",
-    "realizedPnlToday": "3420.0000",
-    "asOf": "2026-10-28T10:30:00Z",
-    "freshness": "LIVE"
-  },
-  "meta": { "requestId": "req_03", "timestamp": "2026-10-28T10:30:00Z", "freshness": "LIVE", "dataSource": "BROKER" }
-}
+export const SubscriptionTier = {
+  FREE: 'FREE',
+  STARTER: 'STARTER',
+  PRO: 'PRO',
+  ENTERPRISE: 'ENTERPRISE',
+} as const;
 ```
 
-#### `GET /api/v1/positions`
-Returns current intraday positions.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<Position[]>`
-
-#### `GET /api/v1/orders`
-Retrieves orders for current session with optional status filters (`?status=OPEN`).
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<Order[]>`
-
-#### `GET /api/v1/trades`
-Returns today's execution fill records.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<Trade[]>`
-
 ---
 
-### 3.4 Market Data Feeds
+## 3. Canonical REST API Endpoints
 
-#### `GET /api/v1/market/nifty`
-Returns the latest spot quote for the NIFTY 50 Index.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<NiftyQuote>`
-```json
-{
-  "success": true,
-  "data": {
-    "lastPrice": 24478.25,
-    "change": 142.10,
-    "changePercent": 0.58,
-    "open": 24350.00,
-    "high": 24510.50,
-    "low": 24320.00,
-    "close": 24336.15,
-    "volume": 18239014,
-    "timestamp": "2026-10-28T10:30:00Z",
-    "freshness": "LIVE"
-  },
-  "meta": { "requestId": "req_04", "timestamp": "2026-10-28T10:30:00Z", "freshness": "LIVE", "dataSource": "BROKER" }
-}
-```
+### 3.1 Authentication & Multi-Tenant Workspaces
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/register` | Register new independent trader | Public |
+| `GET` | `/api/v1/auth/me` | Current authenticated user profile | Authenticated |
+| `GET` | `/api/v1/tenants` | List all tenant memberships for user | Authenticated |
+| `POST` | `/api/v1/tenants` | Create new trading desk / organization | Authenticated |
+| `GET` | `/api/v1/tenants/current` | Active tenant context & role details | Tenant Scoped |
+| `PUT` | `/api/v1/tenants/current` | Update tenant details & settings | Tenant Admin |
+| `GET` | `/api/v1/tenants/current/members`| List members of active tenant | Tenant Scoped |
+| `POST` | `/api/v1/tenants/current/invites`| Invite member to active tenant | Tenant Admin |
 
-#### `GET /api/v1/market/candles?symbol=NIFTY&interval=5m&limit=100`
-Returns historical OHLCV 5-minute candles.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<CandlesResponse>`
+### 3.2 Multi-Broker Account Management
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/brokers` | List connected broker accounts for tenant | Tenant Scoped |
+| `POST` | `/api/v1/brokers` | Add new broker account configuration | Tenant Admin |
+| `GET` | `/api/v1/brokers/{id}/connect` | Initiate OAuth redirect or 2FA flow | Tenant Admin |
+| `POST` | `/api/v1/brokers/{id}/oauth/callback`| Handle OAuth 2.0 authorization code | Authenticated |
+| `POST` | `/api/v1/brokers/{id}/reconnect` | Renew daily session / refresh token | Tenant Admin |
+| `POST` | `/api/v1/brokers/{id}/disconnect`| Terminate active broker session | Tenant Admin |
+| `GET` | `/api/v1/brokers/{id}/status` | Connection state, feed status, IP compliance | Tenant Scoped |
 
-#### `GET /api/v1/market/option-chain?underlying=NIFTY`
-Returns the option chain strike ladder with Greeks for the nearest weekly expiry.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<OptionChainResponse>`
+### 3.3 Account Telemetry & Risk Governance
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/account/funds` | Available cash, used margin, snapshots | Tenant Scoped |
+| `GET` | `/api/v1/positions` | Real-time open positions & unrealized P&L | Tenant Scoped |
+| `GET` | `/api/v1/risk/allowance` | Daily loss limits, cushion, circuit status | Tenant Scoped |
+| `POST` | `/api/v1/risk/emergency-halt` | Manual circuit-breaker activation | Tenant Trader |
 
----
+### 3.4 Market Data & Telemetry
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/market/nifty` | Real-time NIFTY 50 spot quote & change | Tenant Scoped |
+| `GET` | `/api/v1/market/candles` | 1m, 5m, 15m historical/live candlesticks | Tenant Scoped |
+| `GET` | `/api/v1/market/option-chain` | Strike ladder, bid/ask depth, CE/PE quotes | Tenant Scoped |
+| `GET` | `/api/v1/market/scanner` | Rule-based premium candidates (₹40-₹45) | Tenant Scoped |
 
-### 3.5 Strategy Governance Endpoints
+### 3.5 Order Execution & Trade Cycles
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/orders/validate` | Pre-flight validation (funds, risk, tick) | Tenant Scoped |
+| `POST` | `/api/v1/orders` | Submit order (Paper simulation / Live gate)| Tenant Trader |
+| `GET` | `/api/v1/orders` | List open and past orders with state history| Tenant Scoped |
+| `POST` | `/api/v1/orders/{id}/cancel` | Request order cancellation | Tenant Trader |
+| `GET` | `/api/v1/trades` | Reconciled trade cycles & itemized charges | Tenant Scoped |
+| `GET` | `/api/v1/trades/{id}` | Detailed execution timeline for cycle | Tenant Scoped |
 
-#### `GET /api/v1/strategies`
-Lists all configured strategies and active versions.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<Strategy[]>`
+### 3.6 Strategy Configuration & Automation
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/strategies/active` | Active strategy config & version metadata | Tenant Scoped |
+| `PUT` | `/api/v1/strategies/active` | Update parameters (creates version snapshot)| Tenant Trader |
+| `GET` | `/api/v1/strategies/versions` | Immutable version snapshot ledger | Tenant Scoped |
+| `POST` | `/api/v1/strategies/evaluate` | Trigger evaluation routine for tenant | Tenant Trader |
+| `GET` | `/api/v1/strategies/schedule` | Market calendar & countdown to 12:20 IST | Tenant Scoped |
 
-#### `GET /api/v1/strategies/active`
-Retrieves the currently selected operational strategy.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<Strategy>`
+### 3.7 Analytics & Financial Accounting
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/analytics/performance`| Gross/net P&L, win rate, expectancy, drawdown| Tenant Scoped |
+| `GET` | `/api/v1/analytics/export` | Download real trade records (CSV/JSON) | Tenant Scoped |
+| `POST` | `/api/v1/funds/contract-notes`| Upload official contract note for reconciliation| Tenant Admin |
 
-#### `PUT /api/v1/strategies/{strategy_id}`
-Creates a new immutable `strategy_version` and validates live readiness.
-- **Authentication**: Bearer JWT.
-- **Request Body**: `StrategyConfig`
-- **Response**: `ApiResponse<StrategyValidationResult>`
-
----
-
-### 3.6 Dashboard Aggregation & Events
-
-#### `GET /api/v1/dashboard/overview`
-Aggregated telemetry summary optimized for single-call dashboard rendering.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<DashboardOverview>`
-
-#### `GET /api/v1/system/events?limit=50&severity=WARNING`
-Paginated audit of system and risk events.
-- **Authentication**: Bearer JWT.
-- **Response**: `PaginatedResponse<SystemEvent>`
-
----
-
-### 3.7 Phase 2 Analytics, Trade Cycles & Engine Control
-
-#### `POST /api/v1/system/engine-state`
-Operator endpoint to pause, resume, or transition engine state.
-- **Authentication**: Bearer JWT.
-- **Request Body**: `EngineStateTransitionRequest` (`{ "state": "PAUSED" | "RUNNING" | "STOPPED", "reason": string }`)
-- **Response**: `ApiResponse<{ previousState: string, currentState: string, transitionAt: string }>`
-
-#### `GET /api/v1/analytics/performance?timeframe=7D`
-Aggregated trading performance metrics, equity progression, win rates, and statutory charge totals.
-- **Authentication**: Bearer JWT.
-- **Query Parameters**: `timeframe` (`TODAY`, `7D`, `30D`, `ALL`)
-- **Response**: `ApiResponse<PerformanceMetrics>`
-
-#### `GET /api/v1/analytics/risk`
-Configured risk allowances, daily loss limits, remaining cushions, and risk lock status.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<RiskAllowance>`
-
-#### `GET /api/v1/trade-cycles?page=1&limit=20`
-Paginated ledger of closed and open trade cycles with gross/net P&L and fee breakdowns.
-- **Authentication**: Bearer JWT.
-- **Query Parameters**: `page` (default: 1), `limit` (default: 20)
-- **Response**: `PaginatedResponse<TradeCycleDetail>`
-
-#### `GET /api/v1/trade-cycles/{trade_cycle_id}`
-Detailed execution specifics and itemized statutory fee breakdown (Brokerage, STT, Exchange, GST, SEBI, Stamp Duty) for a single trade cycle.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<TradeCycleDetail>`
-
----
-
-### 3.8 Phase 4 Strategy Engine & Backtesting Endpoints
-
-#### `POST /api/v1/strategies/backtest`
-Runs a zero-lookahead chronological backtest simulation across completed 5-minute NIFTY candles. Slices candles strictly up to 12:20 PM IST per trading day before evaluating EMA 9/21 trend signals. Computes simulated gross P&L, itemized statutory transaction charges, and net P&L.
-- **Authentication**: Bearer JWT.
-- **Request Body**: `BacktestRequest` (`{ "strategyId": string, "startDate": string, "endDate": string, "lotCount": number, "targetMove": number, "stopLossMove": number }`)
-- **Response**: `ApiResponse<BacktestResult>`
-
-#### `GET /api/v1/strategies/{strategy_id}/versions`
-Retrieves the append-only version history of immutable strategy configurations with cryptographic checksums.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<StrategyVersionRecord[]>`
-
-#### `GET /api/v1/strategies/{strategy_id}/runs`
-Returns the historical ledger of daily strategy evaluation runs, recording timestamps, candle counts, EMA values, candidate strikes, decisions (`CE_SELECTED`, `PE_SELECTED`, `NO_TRADE`), and skip/rejection reasons.
-- **Authentication**: Bearer JWT.
-- **Query Parameters**: `limit` (default: 30)
-- **Response**: `ApiResponse<StrategyRunRecord[]>`
-
-#### `GET /api/v1/strategies/{strategy_id}/schedule`
-Returns real-time market-calendar-aware scheduling telemetry: next scheduled run timestamp (12:20 PM IST on next active trading day), countdown in seconds, current market trading day status, market open state, and whether today's evaluation has already completed.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<StrategyScheduleStatus>`
-
-#### `POST /api/v1/strategies/{strategy_id}/evaluate`
-Triggers an isolated strategy evaluation cycle. Enforces duplicate daily run guards (`ALREADY_EVALUATED` on repeat runs for the same trading day), validates completed 5m candles, executes the ₹40–₹45 executable-ask option scanner, and records decision in `strategy_runs` and `execution_intents`.
-- **Authentication**: Bearer JWT.
-- **Response**: `ApiResponse<StrategyRunRecord>`
+### 3.8 Subscriptions & Billing
+| Method | Endpoint | Description | Scope |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/billing/plans` | Public subscription plans & feature tiers | Public |
+| `GET` | `/api/v1/billing/subscription`| Current tenant subscription status & quotas| Tenant Admin |
+| `POST` | `/api/v1/billing/upgrade` | Request plan upgrade / payment checkout | Tenant Owner |

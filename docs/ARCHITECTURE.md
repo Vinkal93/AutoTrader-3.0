@@ -1,55 +1,77 @@
 # System Architecture Specification (ARCHITECTURE.md)
+## NIFTY Auto Trader 3.0 — Multi-Tenant, Multi-Broker Trading SaaS
 
-> Technical architectural specification for **NIFTY Auto Trader 3.0** — High-reliability, low-latency automated trading platform.
+> Technical architectural specification for **NIFTY Auto Trader 3.0** — High-reliability, multi-tenant automated trading platform for independent retail traders and desks.
 
 ---
 
-## 1. Architectural Overview & System Topology
+## 1. System Topology & Architecture
 
-The platform is designed following a **distributed, authoritative backend** architecture. The trading worker runs as an autonomous, single-leader state machine on a dedicated Virtual Private Server (VPS) with a compliant static IP address registered with the broker. The web browser functions strictly as a secure, reactive supervisory console.
+The platform is designed following a **multi-tenant, distributed authoritative backend** architecture. The web browser functions strictly as a secure, reactive supervisory console, while all financial calculations, risk checks, broker sessions, and trade state machines are calculated authoritatively by FastAPI backend services and the Trading Worker.
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["Supervisory Client Layer"]
+    subgraph ClientLayer["Supervisory Client Layer (apps/web)"]
         A["Browser (Next.js 14 App Router)"]
+        TS["Tenant / Workspace Switcher"]
+        A --- TS
     end
 
     subgraph EdgeLayer["Edge & Security Layer"]
-        B["Reverse Proxy / SSL Termination (Nginx)"]
+        B["Reverse Proxy / SSL (Nginx / Vercel Edge)"]
         C["Supabase Auth (JWT Verification)"]
     end
 
-    subgraph ApplicationLayer["Application Services Layer"]
-        D["FastAPI Gateway (services/api)"]
-        E["Trading Worker Daemon (services/trading_worker)"]
+    subgraph ApplicationLayer["Application Services Layer (services/api)"]
+        D["FastAPI Gateway (/api/v1/*)"]
+        TR["Tenant Context Resolver Middleware"]
+        D --- TR
+        BM["Broker Adapter Gateway (AbstractBrokerAdapter)"]
+        D --- BM
     end
 
-    subgraph DataLayer["Persistence & State Layer"]
-        F[("PostgreSQL 16 (Primary DB)")]
-        G[("Redis 7 (Distributed Lock & Pub/Sub)")]
+    subgraph WorkerLayer["Execution & Automation Layer (services/trading_worker)"]
+        E["Trading Worker Daemon"]
+        LM["Per-Tenant Lease & State Machine Manager"]
+        E --- LM
     end
 
-    subgraph BrokerLayer["External Broker Infrastructure"]
-        H["Kotak Neo Trading API Gateway"]
-        I["NSE / NFO Exchange Feeds"]
+    subgraph DataLayer["Persistence & Isolation Layer"]
+        F[("PostgreSQL 16 (Tenant-Scoped Tables)")]
+        G[("Redis 7 (Namespaced Locks & Feeds)")]
     end
 
-    %% Client Connections
+    subgraph NetworkLayer["Egress & Static IP Routing"]
+        H1["Tenant A Dedicated Egress IP"]
+        H2["Tenant B Dedicated Egress IP"]
+        H3["Shared SaaS Cluster Outbound"]
+    end
+
+    subgraph BrokerLayer["External Broker Gateways"]
+        K["Kotak Neo Trade API v2"]
+        Z["Zerodha Kite Connect v3"]
+        U["Upstox Pro API v2"]
+        AN["Angel One SmartAPI v2"]
+        DH["DhanHQ API v2"]
+    end
+
+    %% Client Flow
     A -->|"HTTPS / REST (v1 API)"| B
-    A -.->|"Supabase Auth (Tokens)"| C
+    A -.->|"Supabase Auth (JWT)"| C
     B --> D
 
-    %% Internal Inter-service Communications
-    D -->|"SQLAlchemy 2.x (asyncpg)"| F
-    D -->|"Cache Lookup / Event Pub"| G
-    E -->|"State & Audit Logging"| F
-    E -->|"Heartbeat & Distributed Lock"| G
-    D -.->|"Worker Telemetry Sync"| G
+    %% Internal Flows
+    D -->|"SQLAlchemy 2.x (Scoped by tenant_id)"| F
+    D -->|"Redis (autotrader:{tenant_id}:*)"| G
+    E -->|"Per-Tenant Execution Leases"| G
+    E -->|"State Transitions & Fills"| F
 
-    %% Broker Communications
-    E -->|"HTTPS / Session Auth (Static IP)"| H
-    D -->|"Read-only Quotes & Balances"| H
-    H --> I
+    %% Broker Dispatch
+    LM -->|"Static IP Bound Dispatch"| H1 --> K
+    LM -->|"Static IP Bound Dispatch"| H2 --> AN
+    LM -->|"OAuth Direct Dispatch"| H3 --> Z
+    LM -->|"OAuth Direct Dispatch"| H3 --> U
+    LM -->|"API Token Dispatch"| H3 --> DH
 ```
 
 ---
@@ -57,177 +79,94 @@ flowchart TD
 ## 2. Component Responsibilities
 
 ### 2.1 Next.js Web Application (`apps/web`)
-- **Role**: Passive supervisory dashboard and user interface.
+- **Role**: Multi-tenant presentation and supervisory dashboard.
 - **Responsibilities**:
-  - Authenticate administrative users using Supabase Auth JWTs.
-  - Render real-time account telemetry (available cash, used margin, unrealized/realized P&L).
-  - Present market data feeds (NIFTY spot price, 5-minute candles, option chains).
-  - Provide strategy parameter configuration interfaces and immutable version history review.
-  - Render truthful freshness badges (`LIVE`, `RECENT`, `STALE`, `UNAVAILABLE`) based on backend response metadata.
+  - Authenticate users via Supabase Auth and handle organization/workspace switching.
+  - Render real-time account telemetry (funds, used margin, realized/unrealized P&L).
+  - Present market feeds (NIFTY 50 spot price, 5-minute candles, option chains).
+  - Provide strategy parameter editors with immutable version review.
+  - Display truthful system states (`READY`, `LOADING`, `STALE`, `NOT_CONNECTED`, `ERROR`, `UNSUPPORTED`).
   - **Non-Responsibilities**:
     - Never calculates position P&L or Greeks locally.
     - Never evaluates strategy trigger conditions.
     - Never submits orders directly to broker endpoints.
 
 ### 2.2 FastAPI API Gateway (`services/api`)
-- **Role**: Stateless, asynchronous HTTP/REST gateway for clients and administrative tools.
+- **Role**: Stateless, asynchronous HTTP/REST gateway with tenant-scoped routing.
 - **Responsibilities**:
-  - Validate incoming JWT bearer tokens against Supabase public keys.
-  - Expose versioned v1 REST API endpoints (`/api/v1/*`) compliant with `@autotrader/api-contracts`.
-  - Validate incoming request payloads using Pydantic v2 schemas.
-  - Query PostgreSQL for trade history, position snapshots, strategy versions, and system events.
-  - Coordinate read-only broker session queries for funds and live option chains with short-lived Redis caching.
-  - Enforce rate limiting (e.g., 60 requests/minute/user) and CORS security headers.
+  - Validate incoming JWT bearer tokens against Supabase public keys and resolve the authenticated user's active tenant context.
+  - Enforce tenant isolation on every database query (`WHERE tenant_id = :current_tenant_id`).
+  - Route broker requests through the unified `AbstractBrokerAdapter` interface.
+  - Validate all request payloads using Pydantic v2 schemas mirroring `@autotrader/api-contracts`.
+  - Provide administrative endpoints for tenant provisioning, subscriptions, and audit logs.
 
 ### 2.3 Trading Worker Daemon (`services/trading_worker`)
 - **Role**: Authoritative, stateful autonomous execution engine.
 - **Responsibilities**:
-  - Periodically acquire and refresh the distributed leader lock in Redis (`autotrader:worker:leader`).
-  - Maintain the primary engine state machine (`STOPPED` -> `STARTING` -> `READY` -> `RUNNING` -> `PAUSED` -> `RECONCILING` -> `DEGRADED` -> `ERROR` -> `RISK_LOCKED`).
-  - Periodically emit worker heartbeats into PostgreSQL and Redis every 5 seconds.
-  - Manage scheduled strategy lifecycle routines (e.g., pre-market setup at 09:15 AM IST, signal evaluation at 12:20 PM IST, and market close reconciliation at 15:30 PM IST).
-  - Enforce strict risk invariant limits before approving execution intents.
-  - **Phase 1 Safety Constraint**: Hard-locked against submitting live orders to the broker.
+  - Acquire per-tenant execution leases in Redis (`autotrader:{tenant_id}:worker:lease`).
+  - Maintain an independent state machine for each active tenant account.
+  - Execute scheduled strategy evaluations (e.g., 12:20 PM IST directional options entry) per tenant.
+  - Perform automated pre-flight checks (funds, margins, market open, risk limits, tick/lot alignment).
+  - Ensure order idempotency with unique client order references (`{tenant_id}:{order_id}`).
+  - Maintain periodic worker heartbeats and trigger safety recovery mode on anomalies.
 
-### 2.4 PostgreSQL 16 Persistence Engine
+### 2.4 Persistence Layer (PostgreSQL 16 & Redis 7)
 - **Role**: Single source of immutable truth for relational and financial data.
-- **Responsibilities**:
-  - Store normalized, audit-compliant financial tables (21 total tables).
-  - Enforce referential integrity, foreign key cascades, and unique constraints.
-  - Maintain exact precision for monetary amounts using `NUMERIC(15, 4)` and quantities using integer multiples.
-  - Store timestamped historical snapshots of account funds and open positions.
-  - Maintain immutable strategy version snapshots linked directly to trade cycles.
-
-### 2.5 Redis 7 In-Memory Store
-- **Role**: Coordination, distributed locking, and short-term caching.
-- **Responsibilities**:
-  - Single-leader distributed lock management using TTL keys (`SET NX EX 15`).
-  - High-frequency quote and option-chain caching (5-second TTL) to minimize redundant broker API round-trips.
-  - Fast worker liveness heartbeat checks.
-  - Pub/Sub channel for system events and alerts.
-
-### 2.6 Kotak Neo Broker Integration
-- **Role**: External regulatory gateway to NSE/NFO order matching and market data systems.
-- **Responsibilities**:
-  - User session creation using API Consumer Key, Secret, Mobile, Password, and TOTP.
-  - Real-time and historical market data quotes for NIFTY 50 and derivative strikes.
-  - Broker-side account balance and order book reporting.
+- **PostgreSQL**:
+  - Stores all relational models with non-nullable `tenant_id` foreign keys.
+  - Enforces exact monetary precision using `NUMERIC(15, 4)` and integer lot quantities.
+  - Retains immutable audit trails and version snapshots.
+- **Redis 7**:
+  - Namespaced caching for market quotes and option chains (`autotrader:{tenant_id}:*`).
+  - Distributed mutual exclusion locks for order placement and worker leader leases.
 
 ---
 
-## 3. Data Flow Architecture
+## 3. Multi-Broker Unified Abstraction Pattern
 
-### 3.1 Market Data Ingestion Flow
+The backend communicates with external brokers via the canonical `AbstractBrokerAdapter`:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Web Browser
-    participant API as FastAPI Gateway
-    participant Cache as Redis Store
-    participant Broker as Kotak Neo SDK
-    
-    User->>API: GET /api/v1/market/nifty
-    API->>Cache: GET autotrader:quote:nifty
-    alt Cache Hit (TTL < 5s)
-        Cache-->>API: Cached Quote JSON + Timestamp
-        API-->>User: 200 OK (freshness: LIVE, dataSource: CACHE)
-    else Cache Miss / Expired
-        API->>Broker: get_quotes(exchange="NSE", symbol="Nifty 50")
-        Broker-->>API: Raw Quote Payload
-        API->>Cache: SET autotrader:quote:nifty (EX 5s)
-        API-->>User: 200 OK (freshness: LIVE, dataSource: BROKER)
-    end
-```
+```python
+class AbstractBrokerAdapter(ABC):
+    @abstractmethod
+    async def connect(self, credentials: Dict[str, Any]) -> BrokerConnectionStatus: ...
 
-### 3.2 Strategy Execution & Order Lifecycle Flow (Phase 2 Preview)
+    @abstractmethod
+    async def disconnect(self) -> None: ...
 
-The architectural separation between strategy logic, risk governance, and physical order placement ensures that no rogue trade can bypass risk parameters:
+    @abstractmethod
+    async def get_connection_status(self) -> BrokerConnectionStatus: ...
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Engine as Strategy Engine (12:20 IST)
-    participant Risk as Risk Guard Layer
-    participant Intent as Execution Intent Table
-    participant Lock as Distributed Lock
-    participant Broker as Kotak Neo Adapter
-    participant DB as PostgreSQL DB
+    @abstractmethod
+    async def get_funds(self) -> AccountFunds: ...
 
-    Engine->>Engine: 12:20 PM IST Candle Closes (EMA 9 > 21)
-    Engine->>Engine: Select ATM Strike (Premium 40-45)
-    Engine->>Risk: Validate Proposed Trade against Active Limits
-    alt Risk Check Fails (e.g. Max Daily Loss Exceeded)
-        Risk-->>Engine: REJECT (Reason: MaxDailyLossBreached)
-        Risk->>DB: INSERT into risk_events
-    else Risk Check Passes
-        Risk->>Intent: INSERT execution_intent (State: APPROVED)
-        Intent->>Lock: Verify Leader Lock Active
-        alt Phase 1 Safety Lock
-            Lock-->>Intent: REJECT (Phase 1 Read-Only Lock)
-        else Phase 2 Authorized Mode
-            Intent->>Broker: place_order(order_payload)
-            Broker-->>Intent: broker_order_id: "241028000123"
-            Intent->>DB: INSERT orders + order_events
-        end
-    end
+    @abstractmethod
+    async def get_positions(self) -> List[Position]: ...
+
+    @abstractmethod
+    async def get_orders(self) -> List[Order]: ...
+
+    @abstractmethod
+    async def place_order(self, request: OrderPlacementRequest) -> OrderPlacementResponse: ...
+
+    @abstractmethod
+    async def modify_order(self, request: OrderModificationRequest) -> OrderPlacementResponse: ...
+
+    @abstractmethod
+    async def cancel_order(self, order_id: str) -> bool: ...
+
+    @abstractmethod
+    async def get_nifty_quote(self) -> NiftyQuote: ...
+
+    @abstractmethod
+    async def get_option_chain(self, underlying: str, expiry: Optional[str]) -> OptionChainData: ...
 ```
 
 ---
 
-## 4. Separation of Concerns & State Machine Governance
+## 4. Operational Safety Invariants
 
-### 4.1 State Machine Architecture
-The Trading Worker implements a strictly defined, deterministic finite state machine (FSM):
-
-```mermaid
-stateDiagram-v2
-    [*] --> STOPPED
-    STOPPED --> STARTING: Process Initialization
-    STARTING --> READY: Heartbeat & DB Connected
-    READY --> RUNNING: Market Open & Schedule Active
-    RUNNING --> PAUSED: Manual Pause / Lunch Break
-    PAUSED --> RUNNING: Manual Resume
-    RUNNING --> RECONCILING: Position / Order Sync Check
-    RECONCILING --> RUNNING: Reconciliation Matches
-    RUNNING --> DEGRADED: Transient Broker Latency
-    DEGRADED --> RUNNING: Latency Normalizes
-    RUNNING --> ERROR: Fatal Exception / Network Loss
-    RUNNING --> RISK_LOCKED: Risk Invariant Violated
-    ERROR --> STOPPED: Graceful Shutdown
-    RISK_LOCKED --> STOPPED: Operator Intervention
-```
-
-### 4.2 State Invariants
-- **`STOPPED`**: All background loops terminated, no network calls to broker.
-- **`STARTING`**: Initializing database connection pools, inspecting broker authentication state, acquiring leader lock.
-- **`READY`**: Worker is healthy, leader lock held, awaiting scheduled market hours.
-- **`RUNNING`**: Active monitoring of market candles, strategy indicators, and open positions.
-- **`PAUSED`**: Strategy evaluation suspended by user command. Position tracking continues.
-- **`RECONCILING`**: Reconciling local trade records with broker order books. No new orders permitted.
-- **`DEGRADED`**: Broker API latency exceeds thresholds or quote feeds are intermittent.
-- **`ERROR`**: Unrecoverable runtime error. Worker suspends operations and notifies operators.
-- **`RISK_LOCKED`**: Hard stop triggered by risk rule breach (e.g. daily loss cap reached). Requires manual administrative unlocking.
-
----
-
-## 5. High Availability, Distributed Locks & Failover
-
-### 5.1 Single-Worker Guarantee (Anti-Split-Brain)
-Trading options requires strict single-threaded state management per account. Multiple workers attempting to submit orders simultaneously would cause catastrophic double-execution.
-
-To prevent this:
-1. **Redis Leader Lock**: The worker must continuously maintain a distributed mutex with a 15-second TTL:
-   ```
-   SET autotrader:worker:leader <worker_id> NX EX 15
-   ```
-2. **Heartbeat Cadence**: Every 5 seconds, the worker:
-   - Extends the Redis TTL back to 15 seconds.
-   - Writes a timestamped record to the `worker_heartbeats` table in PostgreSQL.
-3. **Failover Execution**: If the active leader fails or suffers a network partition for > 15 seconds:
-   - The Redis key expires automatically.
-   - A hot-standby worker detects the expired lock and acquires leadership.
-   - The incoming leader triggers an immediate `RECONCILING` cycle to sync local state with the broker before resuming operations.
-
-### 5.2 Standalone Fallback
-In local development or test environments where Redis is disabled, the worker automatically detects the missing Redis configuration and runs in standalone leadership mode while continuing to record heartbeats to the primary database.
+1. **Phase 1 Live Order Lock**: Live order submission remains disabled until compliance and release gates are approved.
+2. **Double-Spend & Duplicate-BUY Prevention**: Every prospective order requires an idempotency token (`tenant_id:client_order_id`). A second order cannot be dispatched for a trade cycle while an active entry or position exists.
+3. **Automated Stop-Loss Enforcement**: Every opened options position must have a broker-side protective stop-loss limit order (`SL-L`) placed or monitored continuously.
+4. **Independent Watchdog Monitoring**: An external watchdog process checks worker heartbeats every 5 seconds. If a heartbeat expires (>15 seconds), the tenant engine transitions to `EngineState.ERROR` and prevents new order placements.

@@ -1,122 +1,108 @@
-# Order Execution Lifecycle & Safety State Machine (ORDER_LIFECYCLE.md)
+# Order Lifecycle & State Machine Specification (ORDER_LIFECYCLE.md)
+## NIFTY Auto Trader 3.0 — Multi-Tenant, Multi-Broker Trading SaaS
 
-> Architectural specification of the 13-state deterministic order lifecycle, bracket safety model, reconciliation engine, and idempotency guarantees for **NIFTY Auto Trader 3.0**.
+> Authoritative order execution, risk validation, state transitions, and broker reconciliation for **NIFTY Auto Trader 3.0**.
 
 ---
 
-## 1. The 13-State Execution Lifecycle Machine
+## 1. Multi-Tenant Order State Machine
 
-To prevent duplicate broker orders, untracked fills, and orphaned positions, every trading intent transitions strictly through the following 13 states:
+Every order placed manually or generated via strategy automation progresses through an explicit, validated state machine. Transitions are immutable and audited in PostgreSQL.
 
 ```mermaid
-flowchart TD
-    CREATED["1. CREATED (Intent generated)"] --> VALIDATING["2. VALIDATING (Pre-flight checks)"]
-    VALIDATING -->|Fails Margin/Risk/Tick| REJECTED["11. REJECTED (Local validation fail)"]
-    VALIDATING -->|Passes Checks| AWAITING_SUBMISSION["3. AWAITING_SUBMISSION (Gated)"]
-    AWAITING_SUBMISSION --> SUBMITTING["4. SUBMITTING (In-flight to Broker)"]
-    SUBMITTING -->|Broker Network Timeout| UNKNOWN["12. UNKNOWN (Uncertain outcome)"]
-    UNKNOWN --> RECONCILING["13. RECONCILING (Query broker report)"]
-    RECONCILING -->|Order Not Found at Broker| REJECTED
-    RECONCILING -->|Order Found Open| OPEN["6. OPEN (Working order at exchange)"]
-    RECONCILING -->|Order Found Filled| FILLED["8. FILLED (Completed execution)"]
-    SUBMITTING --> ACKNOWLEDGED["5. ACKNOWLEDGED (Broker ACK received)"]
-    ACKNOWLEDGED --> OPEN
-    OPEN --> PARTIALLY_FILLED["7. PARTIALLY_FILLED (Partial quantity matched)"]
-    PARTIALLY_FILLED --> FILLED
-    OPEN --> FILLED
-    OPEN --> CANCEL_PENDING["9. CANCEL_PENDING (Cancel request sent)"]
-    CANCEL_PENDING --> CANCELLED["10. CANCELLED (Confirmed cancelled)"]
-    SUBMITTING -->|Broker Rejection| REJECTED
+stateDiagram-v2
+    [*] --> CREATED: Intent Generated
+    CREATED --> VALIDATING: Tenant Pre-Flight Checks
+    VALIDATING --> REJECTED: Risk / Margin Violation
+    VALIDATING --> AWAITING_SUBMISSION: Pre-Flight Passed
+    
+    AWAITING_SUBMISSION --> SUBMITTING: Dispatch to Broker Adapter
+    SUBMITTING --> REJECTED: Broker Immediate Rejection
+    SUBMITTING --> ACKNOWLEDGED: Broker Order ID Received
+    
+    ACKNOWLEDGED --> OPEN: Orderbook Resting (LIMIT / SL-L)
+    OPEN --> PARTIALLY_FILLED: Partial Trade Fill Reported
+    PARTIALLY_FILLED --> FILLED: Remaining Quantity Executed
+    OPEN --> FILLED: Complete Fill Reported
+    
+    OPEN --> CANCEL_PENDING: User / Safety Cancel Dispatched
+    CANCEL_PENDING --> CANCELLED: Cancellation Confirmed
+    OPEN --> EXPIRED: Market Close (15:30 IST)
+    
+    OPEN --> UNKNOWN: Feed Dropout / Network Partition
+    UNKNOWN --> RECONCILING: Orderbook Cross-Check
+    RECONCILING --> OPEN: Verified Open
+    RECONCILING --> FILLED: Verified Executed
+    RECONCILING --> CANCELLED: Verified Cancelled
+    
+    FILLED --> [*]: Position Established
+    CANCELLED --> [*]: Order Concluded
+    REJECTED --> [*]: Order Terminated
 ```
 
 ---
 
-## 2. Order Lifecycle State Definitions
+## 2. Tenant Pre-Flight Validation Checks (`VALIDATING`)
 
-| State | Scope & Operational Invariants | Terminal State? |
-| :--- | :--- | :---: |
-| **`CREATED`** | Trade intent instantiated with stable client UUID and idempotency key. No broker interaction yet. | No |
-| **`VALIDATING`** | Pre-flight verification: tick size (0.05), lot size (25), margin required vs cash available, daily loss cushion, and statutory fee simulation. | No |
-| **`AWAITING_SUBMISSION`** | Intent cleared by local risk gates; awaiting operator confirmation (or automated schedule trigger). | No |
-| **`SUBMITTING`** | Dispatching signed API payload to broker via static VPS IP. Distributed lock acquired. | No |
-| **`ACKNOWLEDGED`** | Broker returns initial HTTP 200/202 with assigned `brokerOrderId`. Order accepted into broker queue. | No |
-| **`OPEN`** | Order verified resting on exchange order book (NSE/NFO). Awaiting price matching. | No |
-| **`PARTIALLY_FILLED`** | Sub-lot or partial fill confirmed via broker trade feed. Remaining quantity stays open. | No |
-| **`FILLED`** | Cumulative filled quantity equals requested quantity. Trade cycle promoted to `IN_POSITION`. | **Yes (Success)** |
-| **`CANCEL_PENDING`** | Operator or worker emitted cancellation request. Awaiting broker confirmation. | No |
-| **`CANCELLED`** | Cancellation confirmed by broker. Remaining unfilled quantity returned to zero. | **Yes (Aborted)** |
-| **`REJECTED`** | Rejected by local validation gate, risk circuit, exchange tick rejection, or insufficient margin. | **Yes (Failed)** |
-| **`UNKNOWN`** | Network timeout or HTTP 500 during submission. Order status indeterminate. | No |
-| **`RECONCILING`** | Automated reconciliation routine actively polling broker tradebook/orderbook to determine true state before retrying. | No |
+Before an order moves to `AWAITING_SUBMISSION`, the FastAPI gateway or worker executes mandatory checks scoped to the active tenant:
 
----
-
-## 3. Idempotency & Network Failure Protocol
-
-### 3.1 Prohibition of Blind Retries
-> [!CAUTION]
-> **Under no circumstances may an agent or service automatically resubmit an order that failed with an uncertain submission outcome (`UNKNOWN`).**
-> If an HTTP request to Kotak Neo times out, the order may already have executed at the exchange. Automatically retrying creates severe duplicate financial exposure.
-
-### 3.2 Reconciliation Protocol
-When an order enters `UNKNOWN`:
-1. The trading engine transitions into `RECONCILING`.
-2. A distributed lock prevents new order dispatch.
-3. The engine invokes `get_orders()` and `get_tradebook()` from Kotak Neo using the client-side correlation UUID (`guiOrdId` / `idempotencyKey`).
-4. If the broker reports the order exists, it transitions to `ACKNOWLEDGED`, `OPEN`, or `FILLED`.
-5. If the broker confirms the order does not exist after a 30-second backoff reconciliation window, it transitions safely to `REJECTED`.
+1. **Subscription & Feature Quota Check**:
+   - Verify tenant subscription tier allows live execution (`subscription.live_execution_enabled == true`).
+   - If plan is `FREE`, automatically route order exclusively into local Paper Trading simulation.
+2. **Tenant Capital & Margin Check**:
+   - Query tenant's broker account balance (`available_margin`).
+   - Order cost = `quantity * price + buffer`. Assert `available_margin >= order_cost`.
+3. **Daily Risk Allowance & Circuit Breaker**:
+   - Verify tenant is not in `EngineState.RISK_LOCKED`.
+   - Calculate cumulative daily realized loss. Assert `current_loss + risk_per_trade <= daily_loss_limit`.
+4. **Lot Size & Tick Size Conformance**:
+   - Assert `quantity % exchange_lot_size == 0` (e.g. 25 or 50 for NIFTY).
+   - Assert `price % Decimal("0.05") == Decimal("0.00")`.
+5. **Exchange Hours & Market State**:
+   - Assert current time is within trading hours (09:15 AM - 15:30 PM IST) on an active exchange trading day.
+6. **Double-Spend & Duplicate-BUY Guard**:
+   - Query active trade cycles for this tenant. If an open position or unfulfilled entry order exists, reject duplicate BUY intents.
 
 ---
 
-## 4. Safety Model: Separation of Bracket Concerns
+## 3. Order Idempotency Protocol
 
-In automated options trading, bracket orders must not rely on fragile client-side assumptions:
-
-1. **Target Order vs Protective Stop Order**:
-   - Independent SELL orders do not automatically form an OCO (One-Cancels-the-Other) bracket unless natively supported and acknowledged by the broker API.
-   - When Target is reached, the Stop order must be explicitly cancelled.
-   - When Stop is triggered, the Target order must be explicitly cancelled.
-2. **Actual Broker Position vs Strategy Intent**:
-   - Strategy signals are hypothetical trading intents.
-   - P&L and risk exposure are strictly derived from broker-reported physical positions.
-3. **No Guaranteed Stop-Loss Fill**:
-   - A Stop-Loss Limit order at the exchange can skip in fast gap-down markets if price jumps below the trigger limit.
-   - The execution engine monitors slippage and applies market protection square-off if price breaches stop parameters.
+To prevent accidental duplicate orders resulting from network timeouts or UI double-clicks:
+1. **Client Order ID Generation**:
+   The client or strategy engine generates an idempotency key structured as:
+   `autotrader:{tenant_id}:{trade_cycle_id}:{action}:{uuid}`
+2. **Database Unique Constraint**:
+   The `orders` table enforces a strict unique constraint on `idempotency_key`. A duplicate request returns the existing order record with `200 OK` rather than generating a secondary broker transaction.
 
 ---
 
-## 5. Phase 5 Implementation: Execution Engine & Single-Authority Exit Manager
+## 4. Multi-Broker Normalized Order Translation
 
-### 5.1 Single-Authority Exit Manager & Cancel-Confirm-Reconcile Sequence
-Because Indian retail options brokers (including Kotak Neo) do not provide native exchange-level OCO bracket orders for options buying, placing simultaneous independent SELL orders at Target and Stop-Loss creates catastrophic risk: if the target fills, the stop order remains active at the exchange and can trigger later, turning the trader unintentionally SHORT into naked option writing.
+The canonical `AbstractBrokerAdapter` maps generic order parameters into broker-native structures:
 
-To prevent this, the engine enforces a **Single-Authority Exit Manager**:
-1. Upon confirmed BUY fill, **only ONE resting protective order** is placed at the broker: an exchange-side **Stop-Loss Limit (SL-L)** order.
-2. When the target price is reached (or at mandatory 15:15 IST intraday exit, or on operator emergency halt):
-   - **Step A (`CANCEL_PENDING`)**: A cancel request is dispatched for the resting SL-L order.
-   - **Step B (`CANCELLED` Confirmation)**: The engine awaits explicit acknowledgment of cancellation from the broker.
-   - **Step C (Position Reconciliation & Race Handling)**: The engine polls broker tradebook to verify whether the stop order was filled in the matching engine during transit before the cancel arrived:
-     - If the stop *filled during the race*, the trade cycle is marked closed at Stop-Loss. Duplicate target order dispatch is strictly aborted.
-     - If the stop *is confirmed cancelled* and the long position remains open, the engine submits the Target SELL limit order.
-3. **Documented Unprotected Interval**:
-   A deterministic latency window (typically 50ms to 200ms depending on broker network RTT) exists between the cancellation confirmation of the SL-L order and the exchange acceptance of the target SELL order. During this brief window, the position is unhedged. The autonomous worker continuously monitors quotes; if price drops rapidly during this window, an emergency market square-off is triggered.
+| Canonical Field | Kotak Neo API | Zerodha Kite Connect | Upstox Pro v2 | Angel One SmartAPI |
+| :--- | :--- | :--- | :--- | :--- |
+| **Transaction Side** | `tt: "B"` / `"S"` | `transaction_type: "BUY"` | `transaction_type: "BUY"` | `transactiontype: "BUY"` |
+| **Product Code** | `pc: "NRML"` | `product: "NRML"` | `product: "I"` / `"D"` | `producttype: "CARRYFORWARD"` |
+| **Order Type** | `pt: "L"` / `"SL"` | `order_type: "LIMIT"` / `"SL"`| `order_type: "LIMIT"` / `"SL"`| `ordertype: "LIMIT"` / `"STOPLOSS_LIMIT"` |
+| **Quantity** | `qt: str(qty)` | `quantity: int(qty)` | `quantity: int(qty)` | `quantity: str(qty)` |
+| **Limit Price** | `pr: str(price)` | `price: float(price)` | `price: float(price)` | `price: str(price)` |
+| **Trigger Price** | `tp: str(trigger)`| `trigger_price: float(tp)`| `trigger_price: float(tp)`| `triggerprice: str(tp)` |
 
-### 5.2 Critical Disclaimer: SL-L Orders Do NOT Guarantee Execution
-> [!CAUTION]
-> **A Stop-Loss Limit (SL-L) order does NOT guarantee execution or a fixed maximum loss.**
-> In fast-moving gap-down markets or illiquid strikes, if the market price jumps below both the trigger price and the limit price without matching any orders, the order will remain resting on the exchange order book as an unfilled limit order while losses continue to mount. 
-> The autonomous Execution Engine actively tracks quote slippage: if the contract price drops 5% beyond the stop trigger while the order rests unfilled, the worker initiates emergency slippage protection square-off.
+---
 
-### 5.3 Protective SL-L Submission Failure (Emergency Procedure)
-If the broker or exchange rejects the initial protective SL-L order following a BUY fill (due to margin, circuit limit, or API error):
-1. The engine transitions immediately into `EngineState.RISK_LOCKED`.
-2. All further automated entries are frozen.
-3. An emergency risk-reduction procedure is executed immediately: a market/limit square-off order is submitted to flatten the unprotected open position.
-4. A CRITICAL `SystemEvent` is logged and broadcast to supervisor channels.
+## 5. Execution Target & Protective Stop-Loss (OCO Architecture)
 
-### 5.4 Four-Part LIVE Safety Gate
-To prevent accidental real-money execution, LIVE trading activation requires all four gates to be strictly verified:
-1. **Explicit Operator Consent Token**: Required confirmation secret (`AUTHORIZE_LIVE_NIFTY_TRADING_3.0`).
-2. **Active Broker Session**: Kotak Neo session state verified as `CONNECTED`.
-3. **VPS Static-IP Compliance**: Egress IP matches the registered static IP at Kotak Neo.
-4. **Approved Risk Configuration**: Both `maxDailyLoss` and `maxRiskPerTrade` must be populated with positive numerical thresholds in the active strategy version.
+> [!IMPORTANT]
+> Indian broker retail APIs do not provide broker-native OCO (One-Cancels-the-Other) orders for intraday options. The platform manages targets and protective stops authoritatively:
+
+1. **Target Calculation**:
+   Upon fill confirmation of entry BUY, Target is calculated as:
+   `target_price = average_fill_price + target_premium_move` (initially ₹1.00).
+2. **Protective Stop-Loss (SL-L)**:
+   Immediately upon entry fill, a broker-side `SL-L` order is submitted:
+   `trigger_price = average_fill_price - initial_stop_loss` (initially ₹3.00),
+   `limit_price = trigger_price - tick_size` (slippage protection).
+3. **Exit Reconciliation**:
+   - If market reaches Target price, the worker submits a LIMIT SELL order at target price and subsequently cancels the pending SL-L order upon fill.
+   - If market triggers SL-L, the worker receives the fill callback and marks the trade cycle closed without dispatching an extraneous sell order.
