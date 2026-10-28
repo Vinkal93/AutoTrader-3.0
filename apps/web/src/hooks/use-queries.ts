@@ -25,6 +25,12 @@ import {
   type ScannerConfig,
   type OrderValidationRequest,
   type OrderValidationResult,
+  type StrategyVersionRecord,
+  type StrategyRunRecord,
+  type StrategyScheduleStatus,
+  type BacktestRequest,
+  type BacktestResult,
+  type StrategyConfig,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -47,6 +53,9 @@ export const queryKeys = {
   niftyQuote: ['niftyQuote'] as const,
   strategies: ['strategies'] as const,
   activeStrategy: ['activeStrategy'] as const,
+  strategyVersions: (id: string) => ['strategyVersions', id] as const,
+  strategyRuns: (id: string) => ['strategyRuns', id] as const,
+  strategySchedule: (id: string) => ['strategySchedule', id] as const,
   dashboardOverview: ['dashboardOverview'] as const,
   systemEvents: ['systemEvents'] as const,
 };
@@ -392,6 +401,102 @@ export function useEmergencyExit() {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders });
       queryClient.invalidateQueries({ queryKey: queryKeys.positions });
       queryClient.invalidateQueries({ queryKey: queryKeys.systemEvents });
+    },
+  });
+}
+
+// Phase 4: Strategy Engine Hooks
+
+export function useStrategyVersions(strategyId?: string) {
+  return useQuery({
+    queryKey: strategyId ? queryKeys.strategyVersions(strategyId) : ['strategyVersions'],
+    queryFn: async () => {
+      if (!strategyId) return [];
+      const res = await api.get<StrategyVersionRecord[]>(`/api/v1/strategies/${strategyId}/versions`);
+      return res.data;
+    },
+    enabled: !!strategyId,
+    retry: 1,
+  });
+}
+
+export function useStrategyRuns(strategyId?: string, limit = 50) {
+  return useQuery({
+    queryKey: strategyId ? queryKeys.strategyRuns(strategyId) : ['strategyRuns'],
+    queryFn: async () => {
+      if (!strategyId) return [];
+      const res = await api.get<StrategyRunRecord[]>(`/api/v1/strategies/${strategyId}/runs?limit=${limit}`);
+      return res.data;
+    },
+    enabled: !!strategyId,
+    retry: 1,
+  });
+}
+
+export function useStrategySchedule(strategyId?: string, refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: strategyId ? queryKeys.strategySchedule(strategyId) : ['strategySchedule'],
+    queryFn: async () => {
+      if (!strategyId) return null;
+      const res = await api.get<StrategyScheduleStatus>(`/api/v1/strategies/${strategyId}/schedule`);
+      return res.data;
+    },
+    enabled: !!strategyId,
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+export function useUpdateStrategy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      strategyId,
+      config,
+      changeReason,
+    }: {
+      strategyId: string;
+      config: StrategyConfig;
+      changeReason: string;
+    }) => {
+      const res = await api.put<Strategy>(`/api/v1/strategies/${strategyId}`, {
+        config,
+        changeReason,
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.activeStrategy });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategies });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategyVersions(data.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategySchedule(data.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+export function useEvaluateStrategy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ strategyId, force = false }: { strategyId: string; force?: boolean }) => {
+      const res = await api.post<StrategyRunRecord>(
+        `/api/v1/strategies/${strategyId}/evaluate?force=${force}`
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategyRuns(data.strategyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategySchedule(data.strategyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+    },
+  });
+}
+
+export function useBacktestStrategy() {
+  return useMutation({
+    mutationFn: async (payload: BacktestRequest) => {
+      const res = await api.post<BacktestResult>(API_ROUTES.strategyBacktest, payload);
+      return res.data;
     },
   });
 }

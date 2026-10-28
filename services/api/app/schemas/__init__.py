@@ -66,6 +66,14 @@ from app.schemas.market_scanner import (
     ScannerResult,
     TrendAnalysis,
 )
+from app.schemas.strategy_engine import (
+    BacktestRequest,
+    BacktestResult,
+    BacktestSignalLog,
+    StrategyRunRecord,
+    StrategyScheduleStatus,
+    StrategyVersionRecord,
+)
 
 __all__ = [
     "CamelModel",
@@ -116,4 +124,10 @@ __all__ = [
     "TrendAnalysis",
     "OrderValidationRequest",
     "OrderValidationResult",
+    "StrategyVersionRecord",
+    "StrategyRunRecord",
+    "StrategyScheduleStatus",
+    "BacktestSignalLog",
+    "BacktestRequest",
+    "BacktestResult",
 ]

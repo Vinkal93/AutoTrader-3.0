@@ -61,6 +61,7 @@ const requiredRoutes = [
   '/api/v1/orders/validate',
   '/api/v1/strategies',
   '/api/v1/strategies/active',
+  '/api/v1/strategies/backtest',
   '/api/v1/dashboard/overview',
   '/api/v1/analytics/performance',
   '/api/v1/system/events',

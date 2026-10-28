@@ -642,6 +642,91 @@ export interface OrderValidationResult {
   warnings: string[];
 }
 
+// ---- Strategy Versions & Execution Runs (Phase 4) ----
+
+export interface StrategyVersionRecord {
+  id: string;
+  strategyId: string;
+  versionNumber: number;
+  config: StrategyConfig;
+  createdBy: string | null;
+  changeReason: string | null;
+  createdAt: string;
+}
+
+export interface StrategyRunRecord {
+  id: string;
+  strategyId: string;
+  strategyVersionId: string | null;
+  versionNumber: number;
+  tradeDate: string; // YYYY-MM-DD
+  tradingMode: TradingMode;
+  decision:
+    | 'ENTER_CE'
+    | 'ENTER_PE'
+    | 'NO_TRADE_SIDEWAYS'
+    | 'NO_TRADE_NO_CONTRACT'
+    | 'NO_TRADE_STALE_DATA'
+    | 'SKIP_HOLIDAY'
+    | 'SKIP_WEEKEND'
+    | 'ALREADY_EVALUATED';
+  reason: string;
+  selectedContract: ScannerCandidate | null;
+  ema9: number | null;
+  ema21: number | null;
+  emaSpread: number | null;
+  spotPrice: number | null;
+  evaluatedAt: string;
+}
+
+export interface StrategyScheduleStatus {
+  strategyId: string;
+  strategyName: string;
+  scheduledTimeIST: string;
+  nextRunIST: string;
+  nextRunTimestamp: string;
+  isMarketOpen: boolean;
+  isTradingDay: boolean;
+  isHoliday: boolean;
+  holidayName: string | null;
+  alreadyRunToday: boolean;
+  timeRemainingSeconds: number;
+  serverTimeIST: string;
+}
+
+export interface BacktestSignalLog {
+  date: string;
+  timeIST: string;
+  signal: 'BUY_CE' | 'BUY_PE' | 'SKIP_SIDEWAYS' | 'NO_SIGNAL';
+  reason: string;
+  spotPrice: number;
+  ema9: number;
+  ema21: number;
+  candleClose: number;
+}
+
+export interface BacktestRequest {
+  symbol?: string;
+  interval?: string;
+  fromDate?: string;
+  toDate?: string;
+  config?: Partial<StrategyConfig>;
+}
+
+export interface BacktestResult {
+  totalCandles: number;
+  totalDays: number;
+  evaluatedDays: number;
+  tradeSignals: number;
+  ceSignals: number;
+  peSignals: number;
+  skippedDays: number;
+  winRateEstimate: number;
+  totalEstimatedGrossPnl: number;
+  totalEstimatedNetPnl: number;
+  signalLog: BacktestSignalLog[];
+}
+
 // ---- API Route Definitions ----
 
 export const API_ROUTES = {
@@ -666,6 +751,7 @@ export const API_ROUTES = {
   ordersEmergencyExit: '/api/v1/orders/emergency-exit',
   strategies: '/api/v1/strategies',
   activeStrategy: '/api/v1/strategies/active',
+  strategyBacktest: '/api/v1/strategies/backtest',
   dashboardOverview: '/api/v1/dashboard/overview',
   analyticsPerformance: '/api/v1/analytics/performance',
   systemEvents: '/api/v1/system/events',

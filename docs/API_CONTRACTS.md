@@ -302,3 +302,34 @@ Paginated ledger of closed and open trade cycles with gross/net P&L and fee brea
 Detailed execution specifics and itemized statutory fee breakdown (Brokerage, STT, Exchange, GST, SEBI, Stamp Duty) for a single trade cycle.
 - **Authentication**: Bearer JWT.
 - **Response**: `ApiResponse<TradeCycleDetail>`
+
+---
+
+### 3.8 Phase 4 Strategy Engine & Backtesting Endpoints
+
+#### `POST /api/v1/strategies/backtest`
+Runs a zero-lookahead chronological backtest simulation across completed 5-minute NIFTY candles. Slices candles strictly up to 12:20 PM IST per trading day before evaluating EMA 9/21 trend signals. Computes simulated gross P&L, itemized statutory transaction charges, and net P&L.
+- **Authentication**: Bearer JWT.
+- **Request Body**: `BacktestRequest` (`{ "strategyId": string, "startDate": string, "endDate": string, "lotCount": number, "targetMove": number, "stopLossMove": number }`)
+- **Response**: `ApiResponse<BacktestResult>`
+
+#### `GET /api/v1/strategies/{strategy_id}/versions`
+Retrieves the append-only version history of immutable strategy configurations with cryptographic checksums.
+- **Authentication**: Bearer JWT.
+- **Response**: `ApiResponse<StrategyVersionRecord[]>`
+
+#### `GET /api/v1/strategies/{strategy_id}/runs`
+Returns the historical ledger of daily strategy evaluation runs, recording timestamps, candle counts, EMA values, candidate strikes, decisions (`CE_SELECTED`, `PE_SELECTED`, `NO_TRADE`), and skip/rejection reasons.
+- **Authentication**: Bearer JWT.
+- **Query Parameters**: `limit` (default: 30)
+- **Response**: `ApiResponse<StrategyRunRecord[]>`
+
+#### `GET /api/v1/strategies/{strategy_id}/schedule`
+Returns real-time market-calendar-aware scheduling telemetry: next scheduled run timestamp (12:20 PM IST on next active trading day), countdown in seconds, current market trading day status, market open state, and whether today's evaluation has already completed.
+- **Authentication**: Bearer JWT.
+- **Response**: `ApiResponse<StrategyScheduleStatus>`
+
+#### `POST /api/v1/strategies/{strategy_id}/evaluate`
+Triggers an isolated strategy evaluation cycle. Enforces duplicate daily run guards (`ALREADY_EVALUATED` on repeat runs for the same trading day), validates completed 5m candles, executes the ₹40–₹45 executable-ask option scanner, and records decision in `strategy_runs` and `execution_intents`.
+- **Authentication**: Bearer JWT.
+- **Response**: `ApiResponse<StrategyRunRecord>`

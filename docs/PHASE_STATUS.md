@@ -88,12 +88,30 @@ The platform has reached full completion for **Phase 3: Professional Live Tradin
 
 ---
 
-## 6. Readiness Checklist for Phase 4 Transition
+## 6. Phase 4 Completion Scorecard: Automated Strategy Engine
 
-Prior to authorizing Phase 4 (Order Execution & Automated Live Broker Routing):
+The platform has reached full structural completion for **Phase 4: Automated Strategy Engine**.
 
-- [ ] **Dual-Key Passkey Gate**: Cryptographic authorization required before promoting any account to LIVE mode.
-- [ ] **Kotak Neo Live Order Submission Adapter**: Live order placement with rate-limiting and idempotency keys.
-- [ ] **Broker Order Stream Reconciliation**: Live WebSocket subscription to Kotak order updates (`flDtTm`, `flPrc`).
-- [ ] **Time-Based Exit Routine (15:15 PM IST)**: Automated square-off routine executing bracket cancellations.
-- [ ] **VPS Static IP Developer Portal Verification**: Registered static IP validated against Kotak Securities developer portal.
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Strategy Settings Page** | 5-tab responsive management interface ([`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/strategies/page.tsx)), parameter editor, version history, audit ledger, backtesting | **COMPLETED** | [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/strategies/page.tsx) |
+| **Database Version Persistence** | Every setting alteration creates an immutable version row in `strategy_versions` with reason audit & version increment | **COMPLETED** | [`strategy_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_service.py) |
+| **Market Calendar Scheduler** | Timezone-aware IST scheduler (12:20 PM IST), holiday detection (Republic Day, Diwali, weekends), next run countdown | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py) |
+| **Canonical Indicator Math** | Recursive EMA 9 and EMA 21 computed strictly from completed 5m NIFTY bars ($k = \frac{2}{N+1}$) | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py), [`strategy-engine.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/strategy-engine.test.ts) |
+| **Direction & Momentum Rules** | Bullish $\to$ `ENTER_CE`, Bearish $\to$ `ENTER_PE`, Sideways (spread $< 2.0$) $\to$ `NO_TRADE_SIDEWAYS`, Unconfirmed $\to$ Skip | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py) |
+| **Smart Premium Scanner Ingestion** | Executable ask range [₹40, ₹45], spread $\le ₹1.50$, ask depth $\ge 50$, deterministic scoring | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py) |
+| **Decision Audit & Run Ledger** | Every evaluation, candidate, rejection and skip reason stored in `strategy_runs` and `execution_intents` | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py) |
+| **Duplicate Run Guard** | Exactly one eligible scheduled evaluation per configured trading day; duplicate runs rejected | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py), [`strategy-engine.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/strategy-engine.test.ts) |
+| **Isolated Backtesting Simulator** | Chronological simulation over candle series with zero future-data leakage | **COMPLETED** | [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py) |
+| **Backend REST Endpoints** | `GET /strategies/{id}/versions`, `GET /strategies/{id}/runs`, `GET /strategies/{id}/schedule`, `POST /strategies/{id}/evaluate`, `POST /strategies/backtest` | **COMPLETED** | [`strategies.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/strategies.py) |
+| **Live Order Execution Locked** | LIVE order submission remains locked in accordance with Prime Directive 1.8 | **COMPLETED** | [`AGENTS.md`](file:///d:/Coding/Auto%20Trader%203.0/AGENTS.md) |
+
+---
+
+## 7. Scope Boundary & Phase 5 Readiness
+
+> [!CAUTION]
+> **PHASE 4 HARD SAFETY LOCK:**
+> In accordance with user directives, work stops after Phase 4.
+> Live broker order execution (`place_order`, `modify_order`, `cancel_order`) is deferred to **Phase 5 (Order Execution & Risk Engine)**.
+> All strategy evaluation signals operate exclusively in advisory / paper simulation mode.

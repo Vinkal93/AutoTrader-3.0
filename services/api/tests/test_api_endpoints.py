@@ -181,6 +181,39 @@ async def test_endpoint_contracts_and_security_headers():
         assert body["success"] is True
         assert body["data"]["status"] == "EMERGENCY_HALT_ACTIVE"
 
+        # 21. Strategy Active & Versions
+        strat_res = await client.get("/api/v1/strategies/active")
+        assert strat_res.status_code == 200
+        strat_id = strat_res.json()["data"]["id"]
+
+        ver_res = await client.get(f"/api/v1/strategies/{strat_id}/versions")
+        assert ver_res.status_code == 200
+        assert isinstance(ver_res.json()["data"], list)
+
+        # 22. Strategy Schedule
+        sched_res = await client.get(f"/api/v1/strategies/{strat_id}/schedule")
+        assert sched_res.status_code == 200
+        sched_body = sched_res.json()["data"]
+        assert "nextRunIST" in sched_body
+        assert "scheduledTimeIST" in sched_body
+
+        # 23. Strategy Evaluate
+        eval_res = await client.post(f"/api/v1/strategies/{strat_id}/evaluate?force=true")
+        assert eval_res.status_code == 200
+        eval_body = eval_res.json()["data"]
+        assert "decision" in eval_body
+        assert "reason" in eval_body
+
+        # 24. Strategy Runs
+        runs_res = await client.get(f"/api/v1/strategies/{strat_id}/runs")
+        assert runs_res.status_code == 200
+        assert isinstance(runs_res.json()["data"], list)
+
+        # 25. Strategy Backtest
+        bt_res = await client.post("/api/v1/strategies/backtest", json={"symbol": "NIFTY", "interval": "5m"})
+        assert bt_res.status_code == 200
+        assert "tradeSignals" in bt_res.json()["data"]
+
 
 @pytest.mark.asyncio
 async def test_mode_switch_blocked_for_live_when_risk_unconfigured():

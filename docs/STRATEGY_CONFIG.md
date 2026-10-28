@@ -154,3 +154,41 @@ def assert_live_trading_authorized(strategy_config: StrategyConfig, engine_state
 
 > [!CAUTION]
 > If a trade cycle attempts to breach `maxDailyLoss`, the execution engine transitions into `EngineState.RISK_LOCKED`, cancels all working orders, and blocks further trading until the next morning after manual supervisor sign-off.
+
+---
+
+## 5. Phase 4 Implementation: Automated Strategy Engine & Backtest Architecture
+
+### 5.1 Market-Calendar-Aware Scheduling
+- **Official NSE Holidays**: Hardcoded and extensible calendar of NSE holidays (Republic Day, Mahashivratri, Holi, Good Friday, Eid, Independence Day, Gandhi Jayanti, Diwali, Guru Nanak Jayanti, Christmas, etc.).
+- **Weekend Invalidation**: Saturday and Sunday evaluations are immediately identified as non-trading days (`isTradingDay: false`).
+- **Next Run Determination**: The scheduler computes the exact next trading day at 12:20:00 PM IST (`Asia/Kolkata`, UTC+5:30) and surfaces an accurate countdown in seconds.
+- **Restart-Safe**: The scheduler computes targets dynamically from system time rather than stateful in-memory counters, ensuring resilience against process restarts.
+
+### 5.2 Deterministic Signal Evaluation (Completed 5m Candles)
+1. **Candle Count**: Requires a minimum of 22 completed 5-minute candles from the day's market open (09:15 to 12:20 IST corresponds to candle index 36, minimum requirement: 22 bars for recursive EMA 21 stabilization).
+2. **Recursive EMA Calculation**:
+   $$\text{EMA}_t = \left(\text{Close}_t \times \frac{2}{N + 1}\right) + \left(\text{EMA}_{t-1} \times \left(1 - \frac{2}{N + 1}\right)\right)$$
+   Where $N = 9$ or $N = 21$.
+3. **Sideways Band ($\pm 2.0$ points)**:
+   If $|\text{EMA}_9 - \text{EMA}_{21}| \le 2.0$, trend is declared `SIDEWAYS` and `NO_TRADE` is returned with skip reason `"EMA 9 and EMA 21 within sideways band"`.
+4. **Candle Confirmation**:
+   - Bullish: $\text{Close} > \text{EMA}_9 > \text{EMA}_{21}$ and green bar ($\text{Close} \ge \text{Open}$). Action: Select `CE`.
+   - Bearish: $\text{Close} < \text{EMA}_9 < \text{EMA}_{21}$ and red bar ($\text{Close} \le \text{Open}$). Action: Select `PE`.
+   - Unconfirmed: If price breaches EMA opposite to candle color, evaluation safely skips.
+
+### 5.3 Executable-Ask Premium Scanner
+- Option chain is queried for the nearest weekly expiry.
+- Strikes in the selected direction are filtered strictly by **executable ask price** ($40.00 \le \text{Ask} \le 45.00$).
+- Bid-ask spread limit ($\le 0.80$) and minimum liquidity ($\ge 500$ contracts) are enforced.
+- The strike closest to ₹42.50 midpoint is selected as candidate.
+
+### 5.4 Duplicate Daily Run Prevention
+- Every evaluation checks the audit ledger `strategy_runs` for an existing record matching `(strategy_id, trade_date)`.
+- If already evaluated, the engine returns `ALREADY_EVALUATED` and forbids duplicate order intent creation.
+- Live order submission remains permanently gated (`LIVE` lock maintained).
+
+### 5.5 Zero-Lookahead Backtesting Engine
+- Data is partitioned chronologically by trading day.
+- For each day, candles are strictly sliced up to 12:20 PM IST prior to indicator calculation, completely preventing lookahead bias.
+- Real-world statutory fee schedules (Brokerage ₹40, STT 0.1%, Exchange Turnover, SEBI turnover fees, GST 18%, Stamp Duty 0.003%) are modeled per trade, revealing that micro-moves below 3 points are net-negative.
