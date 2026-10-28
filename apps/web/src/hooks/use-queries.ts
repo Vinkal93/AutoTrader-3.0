@@ -17,6 +17,8 @@ import {
   type EngineState,
   type TradeCycleDetail,
   type PerformanceMetrics,
+  type ComprehensiveAnalytics,
+  type AnalyticsTimeframe,
   type RiskAllowance,
   type CandlesResponse,
   type OptionChainResponse,
@@ -60,6 +62,8 @@ export const queryKeys = {
     ['tradeCycles', page, pageSize, filters] as const,
   tradeCycleDetail: (id: string) => ['tradeCycleDetail', id] as const,
   performanceMetrics: (timeframe: string) => ['performanceMetrics', timeframe] as const,
+  comprehensiveAnalytics: (timeframe: string, startDate?: string, endDate?: string) =>
+    ['comprehensiveAnalytics', timeframe, startDate, endDate] as const,
   riskAllowance: ['riskAllowance'] as const,
   candles: (symbol: string, interval: string) => ['candles', symbol, interval] as const,
   optionChain: (symbol: string, expiry?: string) => ['optionChain', symbol, expiry] as const,
@@ -274,11 +278,39 @@ export function useTradeCycleDetail(id: string | null) {
 }
 
 // 15. Performance Metrics
-export function usePerformanceMetrics(timeframe: 'TODAY' | '7D' | '30D' | 'ALL' = 'TODAY', refetchInterval: number | false = 15000) {
+export function usePerformanceMetrics(timeframe: 'TODAY' | '7D' | '30D' | 'MONTH' | 'ALL' | 'CUSTOM' = 'TODAY', refetchInterval: number | false = 15000) {
   return useQuery({
     queryKey: queryKeys.performanceMetrics(timeframe),
     queryFn: async () => {
       const res = await api.get<PerformanceMetrics>(`${API_ROUTES.analyticsPerformance}?timeframe=${timeframe}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 15b. Comprehensive Analytics (Phase 7)
+export function useComprehensiveAnalytics({
+  timeframe = 'ALL',
+  startDate,
+  endDate,
+  refetchInterval = 15000,
+}: {
+  timeframe?: AnalyticsTimeframe;
+  startDate?: string;
+  endDate?: string;
+  refetchInterval?: number | false;
+} = {}) {
+  return useQuery({
+    queryKey: queryKeys.comprehensiveAnalytics(timeframe, startDate, endDate),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (timeframe) params.append('timeframe', timeframe);
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      const url = `${API_ROUTES.analyticsComprehensive}?${params.toString()}`;
+      const res = await api.get<ComprehensiveAnalytics>(url);
       return res.data;
     },
     refetchInterval,

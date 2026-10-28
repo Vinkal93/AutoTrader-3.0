@@ -3,19 +3,21 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Literal, Optional
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.entities import ChargeEntry, TradeCycle
 from app.routers.deps import success_response
 from app.schemas.analytics import (
+    ComprehensiveAnalytics,
     DailyPnlEntry,
     EquityPoint,
     PerformanceMetrics,
     RiskAllowance,
 )
 from app.schemas.common import ApiResponse
+from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import CurrentUser, get_current_user
 from app.services.state_service import StateService
 from app.services.strategy_service import StrategyService
@@ -26,107 +28,78 @@ router = APIRouter(prefix="/api/v1/analytics", tags=["Analytics"])
 @router.get("/performance", response_model=ApiResponse[PerformanceMetrics])
 async def get_performance_metrics(
     request: Request,
-    timeframe: Literal["TODAY", "7D", "30D", "ALL"] = Query("TODAY", description="Timeframe filter"),
+    timeframe: Literal["TODAY", "7D", "30D", "MONTH", "ALL", "CUSTOM"] = Query("TODAY", description="Timeframe filter"),
+    start_date: Optional[str] = Query(None, description="Start date for custom timeframe"),
+    end_date: Optional[str] = Query(None, description="End date for custom timeframe"),
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[PerformanceMetrics]:
     """Calculate verified performance metrics from closed trade cycles."""
-    now_utc = datetime.now(timezone.utc)
-    stmt = select(TradeCycle)
-
-    if timeframe == "TODAY":
-        today_start = datetime(now_utc.year, now_utc.month, now_utc.day, tzinfo=timezone.utc)
-        stmt = stmt.where(TradeCycle.started_at >= today_start)
-    elif timeframe == "7D":
-        week_ago = now_utc - timedelta(days=7)
-        stmt = stmt.where(TradeCycle.started_at >= week_ago)
-    elif timeframe == "30D":
-        month_ago = now_utc - timedelta(days=30)
-        stmt = stmt.where(TradeCycle.started_at >= month_ago)
-
-    stmt = stmt.order_by(TradeCycle.started_at.asc())
-    cycles = (await db.execute(stmt)).scalars().all()
-
-    total_trades = len(cycles)
-    closed = [c for c in cycles if c.closed_at is not None]
-    closed_count = len(closed)
-
-    winning = sum(1 for c in closed if c.net_pnl and c.net_pnl > 0)
-    losing = sum(1 for c in closed if c.net_pnl and c.net_pnl < 0)
-    breakeven = sum(1 for c in closed if c.net_pnl == 0)
-
-    win_rate = round((winning / closed_count * 100), 2) if closed_count > 0 else 0.0
-
-    gross_sum = sum((c.realized_pnl or Decimal("0")) for c in closed)
-    net_sum = sum((c.net_pnl or Decimal("0")) for c in closed)
-    charges_sum = gross_sum - net_sum
-
-    # Profit factor: gross wins / gross losses
-    gross_wins = sum((c.realized_pnl or Decimal("0")) for c in closed if c.realized_pnl and c.realized_pnl > 0)
-    gross_losses = abs(sum((c.realized_pnl or Decimal("0")) for c in closed if c.realized_pnl and c.realized_pnl < 0))
-    profit_factor = round(float(gross_wins / gross_losses), 2) if gross_losses > 0 else (None if gross_wins == 0 else 999.0)
-
-    # Compute daily PnL breakdown & equity curve
-    daily_groups: dict[str, dict] = {}
-    equity_points: List[EquityPoint] = []
-    running_equity = Decimal("0")
-    peak_equity = Decimal("0")
-    max_drawdown = Decimal("0")
-
-    for c in closed:
-        date_str = c.started_at.strftime("%Y-%m-%d")
-        if date_str not in daily_groups:
-            daily_groups[date_str] = {"gross": Decimal("0"), "net": Decimal("0"), "count": 0}
-        daily_groups[date_str]["gross"] += (c.realized_pnl or Decimal("0"))
-        daily_groups[date_str]["net"] += (c.net_pnl or Decimal("0"))
-        daily_groups[date_str]["count"] += 1
-
-        running_equity += (c.net_pnl or Decimal("0"))
-        if running_equity > peak_equity:
-            peak_equity = running_equity
-        dd = peak_equity - running_equity
-        if dd > max_drawdown:
-            max_drawdown = dd
-
-        equity_points.append(
-            EquityPoint(
-                timestamp=c.closed_at.isoformat() if c.closed_at else c.started_at.isoformat(),
-                equity=float(running_equity),
-            )
-        )
-
-    daily_series = [
-        DailyPnlEntry(
-            date=d,
-            gross_pnl=float(data["gross"]),
-            net_pnl=float(data["net"]),
-            trades_count=data["count"],
-        )
-        for d, data in sorted(daily_groups.items())
-    ]
-
-    charges_status = "ACTUAL" if charges_sum > 0 else ("UNAVAILABLE" if total_trades == 0 else "ESTIMATED")
-
-    metrics = PerformanceMetrics(
+    full_analytics = await AnalyticsService.get_comprehensive_analytics(
+        db,
         timeframe=timeframe,
-        total_trades=total_trades,
-        closed_trades=closed_count,
-        winning_trades=winning,
-        losing_trades=losing,
-        breakeven_trades=breakeven,
-        win_rate=win_rate,
-        gross_pnl=f"{gross_sum:.2f}",
-        net_pnl=f"{net_sum:.2f}",
-        total_charges=f"{charges_sum:.2f}",
-        charges_status=charges_status,
-        max_drawdown=f"{max_drawdown:.2f}" if closed_count > 0 else None,
-        max_drawdown_percent=None,
-        profit_factor=profit_factor,
-        daily_pnl_series=daily_series,
-        equity_curve=equity_points,
+        start_date=start_date,
+        end_date=end_date,
     )
-
+    # Return as PerformanceMetrics for backwards compatibility
+    metrics = PerformanceMetrics(
+        timeframe=full_analytics.timeframe,
+        total_trades=full_analytics.total_trades,
+        closed_trades=full_analytics.closed_trades,
+        winning_trades=full_analytics.winning_trades,
+        losing_trades=full_analytics.losing_trades,
+        breakeven_trades=full_analytics.breakeven_trades,
+        win_rate=full_analytics.win_rate,
+        gross_pnl=full_analytics.gross_pnl,
+        net_pnl=full_analytics.net_pnl,
+        total_charges=full_analytics.total_charges,
+        charges_status=full_analytics.charges_status,
+        max_drawdown=full_analytics.max_drawdown,
+        max_drawdown_percent=full_analytics.max_drawdown_percent,
+        profit_factor=full_analytics.profit_factor,
+        daily_pnl_series=full_analytics.daily_pnl_series,
+        equity_curve=full_analytics.equity_curve,
+    )
     return success_response(metrics, request=request, data_source="DATABASE")
+
+
+@router.get("/comprehensive", response_model=ApiResponse[ComprehensiveAnalytics])
+async def get_comprehensive_analytics(
+    request: Request,
+    timeframe: Literal["TODAY", "7D", "30D", "MONTH", "ALL", "CUSTOM"] = Query("ALL", description="Timeframe filter"),
+    start_date: Optional[str] = Query(None, description="Start date for custom timeframe (ISO string)"),
+    end_date: Optional[str] = Query(None, description="End date for custom timeframe (ISO string)"),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[ComprehensiveAnalytics]:
+    """Retrieve full production-grade trading analytics for Phase 7."""
+    analytics = await AnalyticsService.get_comprehensive_analytics(
+        db,
+        timeframe=timeframe,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    return success_response(analytics, request=request, data_source="DATABASE")
+
+
+@router.get("/export")
+async def export_analytics_report(
+    timeframe: Literal["TODAY", "7D", "30D", "MONTH", "ALL", "CUSTOM"] = Query("ALL", description="Timeframe filter"),
+    format: Literal["csv", "json"] = Query("csv", description="Export format (csv or json)"),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+):
+    """Exports performance analytics summary and trade itemization as CSV or JSON."""
+    content, filename, media_type = await AnalyticsService.export_report(
+        db,
+        timeframe=timeframe,
+        export_format=format,
+    )
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/risk", response_model=ApiResponse[RiskAllowance])

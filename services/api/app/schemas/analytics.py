@@ -56,7 +56,7 @@ class EquityPoint(CamelModel):
 
 
 class PerformanceMetrics(CamelModel):
-    timeframe: Literal["TODAY", "7D", "30D", "ALL"]
+    timeframe: Literal["TODAY", "7D", "30D", "MONTH", "ALL", "CUSTOM"]
     total_trades: int
     closed_trades: int
     winning_trades: int
@@ -72,6 +72,108 @@ class PerformanceMetrics(CamelModel):
     profit_factor: Optional[float] = None
     daily_pnl_series: List[DailyPnlEntry] = []
     equity_curve: List[EquityPoint] = []
+
+
+class OptionTypePerformance(CamelModel):
+    option_type: Literal["CE", "PE"]
+    trades_count: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    breakeven_trades: int = 0
+    win_rate: float = 0.0
+    gross_pnl: str = "0.00"
+    net_pnl: str = "0.00"
+    profit_factor: Optional[float] = None
+    average_pnl: Optional[str] = None
+
+
+class StrategyVersionPerformance(CamelModel):
+    version_number: int
+    strategy_id: str
+    strategy_name: str
+    trades_count: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    win_rate: float = 0.0
+    gross_pnl: str = "0.00"
+    net_pnl: str = "0.00"
+    profit_factor: Optional[float] = None
+    max_drawdown: Optional[str] = None
+
+
+class HoldingTimeAnalysis(CamelModel):
+    average_holding_time_seconds: Optional[int] = None
+    average_winning_holding_time_seconds: Optional[int] = None
+    average_losing_holding_time_seconds: Optional[int] = None
+    min_holding_time_seconds: Optional[int] = None
+    max_holding_time_seconds: Optional[int] = None
+    total_trades_sampled: int = 0
+
+
+class HeatmapDayEntry(CamelModel):
+    date: str
+    gross_pnl: float = 0.0
+    net_pnl: float = 0.0
+    trades_count: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    status: Literal["PROFIT", "LOSS", "BREAKEVEN", "NO_TRADE"] = "NO_TRADE"
+
+
+class SlippageAnalysis(CamelModel):
+    available: bool = False
+    average_entry_slippage_points: Optional[float] = None
+    average_exit_slippage_points: Optional[float] = None
+    total_slippage_cost: Optional[str] = None
+    positive_slippage_trades: int = 0
+    negative_slippage_trades: int = 0
+    zero_slippage_trades: int = 0
+    sample_count: int = 0
+
+
+class TradeDrilldown(CamelModel):
+    id: str
+    strategy_run_id: Optional[str] = None
+    trading_symbol: str
+    option_type: Optional[Literal["CE", "PE"]] = None
+    trading_mode: str
+    quantity: int = 0
+    entry_price: str = "0.00"
+    exit_price: str = "0.00"
+    entry_filled_price: Optional[str] = None
+    exit_filled_price: Optional[str] = None
+    entry_slippage_points: Optional[float] = None
+    exit_slippage_points: Optional[float] = None
+    holding_time_seconds: Optional[int] = None
+    gross_pnl: str = "0.00"
+    charges: str = "0.00"
+    net_pnl: str = "0.00"
+    started_at: str
+    closed_at: Optional[str] = None
+    exit_reason: Optional[str] = None
+
+
+class ComprehensiveAnalytics(PerformanceMetrics):
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    loss_rate: float = 0.0
+    average_win: Optional[str] = None
+    average_loss: Optional[str] = None
+    largest_win: Optional[str] = None
+    largest_loss: Optional[str] = None
+    payoff_ratio: Optional[float] = None
+    expectancy: Optional[str] = None
+    expectancy_ratio: Optional[float] = None
+    peak_equity: Optional[str] = None
+    trough_equity: Optional[str] = None
+    ce_performance: OptionTypePerformance
+    pe_performance: OptionTypePerformance
+    strategy_versions: List[StrategyVersionPerformance] = []
+    holding_time: HoldingTimeAnalysis
+    calendar_heatmap: List[HeatmapDayEntry] = []
+    slippage: SlippageAnalysis
+    drilldowns: List[TradeDrilldown] = []
+    sample_size_warning: Optional[str] = None
 
 
 class RiskAllowance(CamelModel):

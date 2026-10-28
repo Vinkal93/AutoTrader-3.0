@@ -150,11 +150,36 @@ The platform has reached full structural completion for **Phase 6: Financial Acc
 
 ---
 
-## 9. Safety Gate: Live Real-Money Trading Lock
+## 9. Phase 7 Completion Scorecard: Trading Analytics
+
+The platform has reached full structural completion for **Phase 7: Trading Analytics**.
+
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Comprehensive Timeframe Filtering** | Today, 7D, 30D, Month, All-Time, and Custom Date Range filtering with start/end datetimes | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/analytics/page.tsx) |
+| **Gross vs Net P&L Realization** | Realized Gross P&L, itemized statutory fees, and verified Net Realized P&L | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`AnalyticsMetricsGrid.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/AnalyticsMetricsGrid.tsx) |
+| **Win, Loss & Breakeven Rates** | Zero-divide protected win rate ($W/N_{closed}$) and loss rate with breakeven tracking | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`trading-analytics.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/trading-analytics.test.ts) |
+| **Average Win vs Average Loss** | Mean winning trade, mean losing trade, largest win, largest loss, and Payoff Ratio | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`AnalyticsMetricsGrid.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/AnalyticsMetricsGrid.tsx) |
+| **Trade Expectancy & Ratio** | Mathematical expectancy $E = (P_{win} \times \text{AvgWin}) - (P_{loss} \times \text{AvgLoss})$ and Expectancy Ratio | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`trading-analytics.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/trading-analytics.test.ts) |
+| **Peak-to-Trough Drawdown** | Absolute peak-to-trough max drawdown (₹) and percentage (%) relative to high-water mark | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`EquityDrawdownChart.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/EquityDrawdownChart.tsx) |
+| **Profit Factor** | $\sum \text{Gross Wins} / \sum \|\text{Gross Losses}\|$ with zero-loss ceiling representation (999.0) | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`trading-analytics.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/trading-analytics.test.ts) |
+| **Equity Progression Curve** | High-fidelity SVG cumulative Net Realized Equity progression with high-water peak overlay | **COMPLETED** | [`EquityDrawdownChart.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/EquityDrawdownChart.tsx) |
+| **CE vs PE Performance Split** | Comparative breakdown of trades, win rates, gross/net P&L, and profit factor for Calls vs Puts | **COMPLETED** | [`OptionTypeSplitCard.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/OptionTypeSplitCard.tsx) |
+| **Strategy Version Matrix** | Multi-version performance table comparing outcomes across strategy configuration releases | **COMPLETED** | [`StrategyVersionTable.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/StrategyVersionTable.tsx) |
+| **Trade Holding-Time Analysis** | Average, min, max, winning trade duration, and losing trade duration in seconds/minutes | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`AnalyticsMetricsGrid.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/AnalyticsMetricsGrid.tsx) |
+| **Trading Calendar Heatmap** | Interactive calendar grid displaying daily green/red P&L realization tiles with hover cards | **COMPLETED** | [`TradingCalendarHeatmap.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/TradingCalendarHeatmap.tsx) |
+| **Execution Slippage Analysis** | Evaluation of order limit price vs average filled price for adverse vs improved executions | **COMPLETED** | [`SlippageAnalysisCard.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/SlippageAnalysisCard.tsx) |
+| **Trade-Level Drilldowns** | Searchable trade table and inspection modal for examining individual leg fills and fees | **COMPLETED** | [`TradeDrilldownTable.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/TradeDrilldownTable.tsx), [`TradeDrilldownModal.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/analytics/TradeDrilldownModal.tsx) |
+| **Multi-Format Report Export** | Real-time generation of RFC-compliant CSV and JSON reports (`/api/v1/analytics/export`) | **COMPLETED** | [`analytics.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/analytics.py), [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/analytics/page.tsx) |
+| **Sample Size Integrity Notice** | Transparent warning banners indicating statistical insignificance when closed trades < 5 | **COMPLETED** | [`analytics_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/analytics_service.py), [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/analytics/page.tsx) |
+
+---
+
+## 10. Safety Gate: Live Real-Money Trading Lock
 
 > [!CAUTION]
 > **LIVE TRADING SAFETY GATE ACTIVE:**
 > All trade cycles, orders, and execution simulations operate strictly in **PAPER mode**.
 > Real-money live trading remains permanently disabled until explicit four-part operator verification is completed.
 >
-> In accordance with instructions, work stops cleanly after Phase 6.
+> In accordance with instructions, work stops cleanly after Phase 7.

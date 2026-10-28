@@ -508,8 +508,10 @@ export interface TradeCycleDetail {
 
 // ---- Performance & Analytics ----
 
+export type AnalyticsTimeframe = 'TODAY' | '7D' | '30D' | 'MONTH' | 'ALL' | 'CUSTOM';
+
 export interface PerformanceMetrics {
-  timeframe: 'TODAY' | '7D' | '30D' | 'ALL';
+  timeframe: 'TODAY' | '7D' | '30D' | 'MONTH' | 'ALL' | 'CUSTOM';
   totalTrades: number;
   closedTrades: number;
   winningTrades: number;
@@ -533,6 +535,108 @@ export interface PerformanceMetrics {
     timestamp: string;
     equity: number;
   }>;
+}
+
+export interface OptionTypePerformance {
+  optionType: 'CE' | 'PE';
+  tradesCount: number;
+  winningTrades: number;
+  losingTrades: number;
+  breakevenTrades: number;
+  winRate: number;
+  grossPnl: string;
+  netPnl: string;
+  profitFactor: number | null;
+  averagePnl: string | null;
+}
+
+export interface StrategyVersionPerformance {
+  versionNumber: number;
+  strategyId: string;
+  strategyName: string;
+  tradesCount: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRate: number;
+  grossPnl: string;
+  netPnl: string;
+  profitFactor: number | null;
+  maxDrawdown: string | null;
+}
+
+export interface HoldingTimeAnalysis {
+  averageHoldingTimeSeconds: number | null;
+  averageWinningHoldingTimeSeconds: number | null;
+  averageLosingHoldingTimeSeconds: number | null;
+  minHoldingTimeSeconds: number | null;
+  maxHoldingTimeSeconds: number | null;
+  totalTradesSampled: number;
+}
+
+export interface HeatmapDayEntry {
+  date: string; // YYYY-MM-DD
+  grossPnl: number;
+  netPnl: number;
+  tradesCount: number;
+  winningTrades: number;
+  losingTrades: number;
+  status: 'PROFIT' | 'LOSS' | 'BREAKEVEN' | 'NO_TRADE';
+}
+
+export interface SlippageAnalysis {
+  available: boolean;
+  averageEntrySlippagePoints: number | null;
+  averageExitSlippagePoints: number | null;
+  totalSlippageCost: string | null;
+  positiveSlippageTrades: number;
+  negativeSlippageTrades: number;
+  zeroSlippageTrades: number;
+  sampleCount: number;
+}
+
+export interface TradeDrilldown {
+  id: string;
+  strategyRunId: string | null;
+  tradingSymbol: string;
+  optionType: 'CE' | 'PE' | null;
+  tradingMode: string;
+  quantity: number;
+  entryPrice: string;
+  exitPrice: string;
+  entryFilledPrice: string | null;
+  exitFilledPrice: string | null;
+  entrySlippagePoints: number | null;
+  exitSlippagePoints: number | null;
+  holdingTimeSeconds: number | null;
+  grossPnl: string;
+  charges: string;
+  netPnl: string;
+  startedAt: string;
+  closedAt: string | null;
+  exitReason: string | null;
+}
+
+export interface ComprehensiveAnalytics extends PerformanceMetrics {
+  startDate?: string | null;
+  endDate?: string | null;
+  lossRate: number;
+  averageWin: string | null;
+  averageLoss: string | null;
+  largestWin: string | null;
+  largestLoss: string | null;
+  payoffRatio: number | null;
+  expectancy: string | null;
+  expectancyRatio: number | null;
+  peakEquity: string | null;
+  troughEquity: string | null;
+  cePerformance: OptionTypePerformance;
+  pePerformance: OptionTypePerformance;
+  strategyVersions: StrategyVersionPerformance[];
+  holdingTime: HoldingTimeAnalysis;
+  calendarHeatmap: HeatmapDayEntry[];
+  slippage: SlippageAnalysis;
+  drilldowns: TradeDrilldown[];
+  sampleSizeWarning: string | null;
 }
 
 // ---- Risk Metrics ----
@@ -921,6 +1025,8 @@ export const API_ROUTES = {
   strategyBacktest: '/api/v1/strategies/backtest',
   dashboardOverview: '/api/v1/dashboard/overview',
   analyticsPerformance: '/api/v1/analytics/performance',
+  analyticsComprehensive: '/api/v1/analytics/comprehensive',
+  analyticsExport: '/api/v1/analytics/export',
   systemEvents: '/api/v1/system/events',
   systemFailureModes: '/api/v1/system/failure-modes',
   systemLiveAuthorization: '/api/v1/system/live-authorization',
