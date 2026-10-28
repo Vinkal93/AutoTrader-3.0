@@ -1,100 +1,82 @@
 # Security, Cryptography & Compliance (SECURITY.md)
+## NIFTY Auto Trader 3.0 — Multi-Tenant, Multi-Broker Trading SaaS
 
-> Information security architecture, secrets management policy, network boundary protection, and financial transaction safeguards for **NIFTY Auto Trader 3.0**.
+> Security architecture, cryptographic key management, tenant isolation, and regulatory boundaries for **NIFTY Auto Trader 3.0**.
 
 ---
 
-## 1. Authentication Architecture (Two-Tier Model)
+## 1. Multi-Tenant Authentication Architecture
 
-NIFTY Auto Trader 3.0 enforces a strict separation between **Platform Access Authentication** and **Broker Order Execution Authentication**:
+NIFTY Auto Trader 3.0 employs a **three-tier security model** establishing strict boundaries between Platform Authentication, Tenant Context Authorization, and Broker API Execution:
 
 ```mermaid
 flowchart TD
-    subgraph Tier1["Tier 1: Web & Dashboard Operator Auth"]
-        A["Browser Operator"] -->|"Login with Email/Password"| B["Supabase Auth Service"]
-        B -->|"Issues RS256 JWT"| A
-        A -->|"Bearer JWT in Authorization Header"| C["FastAPI Gateway"]
-        C -->|"Verify Signature with Supabase Public Key"| D{"Token Valid?"}
-        D -- No --> E["401 Unauthorized"]
-        D -- Yes --> F["Grant Dashboard Access"]
+    subgraph Tier1["Tier 1: Identity & Authentication"]
+        A["Trader (Browser)"] -->|"Email / Password + MFA"| B["Supabase Auth Service"]
+        B -->|"Issues RS256 JWT (Claims: sub, email)"| A
     end
 
-    subgraph Tier2["Tier 2: Broker Execution Auth"]
-        F --> G["Operator Triggers 2FA Session"]
-        G -->|"Interactive TOTP (Ephemeral)"| H["Kotak Neo Auth Gateway"]
-        H -->|"Issues Session Tokens"| I["FastAPI Broker Session Store (In-Memory)"]
+    subgraph Tier2["Tier 2: Tenant Context & RBAC Authorization"]
+        A -->|"Authorization: Bearer <JWT>\nX-Tenant-ID: <slug>"| C["FastAPI Gateway Middleware"]
+        C -->|"Verify Signature & Tenant Membership"| D{"Authorized Member?"}
+        D -- No --> E["403 Forbidden"]
+        D -- Yes --> F["Inject CurrentTenantContext into Route"]
+    end
+
+    subgraph Tier3["Tier 3: Broker Execution Authentication"]
+        F --> G["Encrypted Broker Session Manager"]
+        G -->|"Decrypt Token (AES-256-GCM)"| H["Decrypted Session Token"]
+        H -->|"HTTPS Signed Dispatch (Static IP)"| I["Broker Trading Gateway"]
     end
 ```
 
-### 1.1 Supabase JWT Validation in FastAPI
-- FastAPI validates incoming tokens using Supabase's public JWKS or configured JWT Secret.
-- The user claims (`sub`, `email`, `role`) are injected into the request context via dependency injection.
-- Role-based permissions:
-  - `AUDITOR`: Read-only access to dashboard, events, and trade reports.
-  - `OPERATOR`: Permitted to update strategy configurations and trigger broker 2FA.
-  - `ADMIN`: Full system controls, user provisioning, and manual state override.
+---
+
+## 2. Secrets Management & Envelope Encryption
+
+### 2.1 Envelope Encryption for Broker Credentials
+In compliance with Indian cybersecurity guidelines and **Rule 18**, broker API secrets, consumer keys, and OAuth access tokens are encrypted at rest using **AES-256-GCM envelope encryption**:
+
+```mermaid
+flowchart LR
+    KMS["Master Key (KMS / Environment)"] -->|"Unwraps"| DEK["Tenant Data Encryption Key (DEK)"]
+    DEK -->|"AES-256-GCM Encrypts"| Plaintext["Broker API Secret / OAuth Token"]
+    Plaintext --> Ciphertext["Encrypted Blob in broker_accounts.secret_encrypted"]
+```
+
+1. **Master Key**: Stored securely in backend environment (`ENCRYPTION_MASTER_KEY_32B`) or cloud secret manager. Never committed to version control.
+2. **Tenant Salt / Key Derivation**: Each tenant uses an independent derived subkey (HKDF) to encrypt broker credentials, guaranteeing that even in the catastrophic event of a database compromise, credentials cannot be decrypted without the master key.
+3. **Zero Plaintext Logging**:
+   - Backend logging middleware filters out all sensitive keys (`password`, `totp`, `secret`, `access_token`, `refresh_token`, `consumer_secret`).
+   - Sentry / monitoring telemetry filters payload bodies for sensitive strings.
 
 ---
 
-## 2. Secrets Management & Zero-Leakage Policy
+## 3. Row-Level & Tenant Data Isolation Invariants
 
-### 2.1 Environmental Hygiene
-1. **Server-Side Only**:
-   - `KOTAK_NEO_CONSUMER_SECRET`, `KOTAK_NEO_PASSWORD`, and `SUPABASE_SERVICE_ROLE_KEY` are read exclusively by backend services.
-   - None of these variables may carry the `NEXT_PUBLIC_` prefix, preventing Next.js client bundle inclusion.
-2. **Zero Logging Guarantee**:
-   - Log formatters enforce redaction filters:
+1. **Database Schema Enforcement**:
+   - Every transactional and financial table features a non-nullable `tenant_id` foreign key with cascade rules.
+   - Database queries use explicit filter criteria:
      ```python
-     SENSITIVE_KEYS = {"password", "secret", "totp", "consumer_secret", "access_token"}
+     stmt = select(Order).where(Order.tenant_id == current_tenant.id)
      ```
-   - Any log payload containing these keys automatically masks the values (`"***REDACTED***"`).
-3. **TOTP Ephemerality**:
-   - Time-based OTP codes are used in-flight to complete the session generation call to Kotak Neo.
-   - Under no circumstances is a TOTP saved to database tables, cached in Redis, or written to disk.
+2. **Cross-Tenant Prevention Tests**:
+   - Automated integration tests execute cross-tenant intrusion scenarios (e.g., Tenant A requesting Tenant B's order ID returns `404 Not Found` or `403 Forbidden`).
+3. **Redis Key Namespacing**:
+   - Keys are strictly partitioned: `autotrader:{tenant_id}:{resource}`.
 
 ---
 
-## 3. Network Security & Perimeter Hardening
+## 4. Network Boundary Security
 
-### 3.1 Static IP Whitelisting
-- Automated trading traffic to Kotak Securities is bound to a dedicated Virtual Private Server (VPS) with a single static IPv4 address.
-- Kotak Neo API servers reject API requests originating from unregistered dynamic IP addresses.
-- An outbound pre-flight check validates external IP identity before initiating sessions.
-
-### 3.2 CORS (Cross-Origin Resource Sharing)
-- Cross-origin browser requests are restricted strictly to configured origins (e.g. `http://localhost:3000` for development or the official production domain):
-  ```python
-  app.add_middleware(
-      CORSMiddleware,
-      allow_origins=settings.API_CORS_ORIGINS,
-      allow_credentials=True,
-      allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allow_headers=["*"],
-  )
-  ```
-
-### 3.3 HTTP Security Headers
-All responses from the API Gateway and Next.js frontend include hardened HTTP security headers:
-- `Content-Security-Policy (CSP)`: Disallows arbitrary inline script injection.
-- `Strict-Transport-Security (HSTS)`: `max-age=63072000; includeSubDomains; preload`
-- `X-Frame-Options`: `DENY` (prevents clickjacking attacks).
-- `X-Content-Type-Options`: `nosniff`.
-- `Referrer-Policy`: `strict-origin-when-cross-origin`.
-
----
-
-## 4. Financial Transaction Security
-
-### 4.1 Idempotency Keys
-To safeguard against duplicate orders caused by network retries, connection drops, or operator double-clicks:
-- Every execution intent and order is assigned a deterministic, UUID-based `idempotency_key`.
-- The database schema enforces a `UNIQUE` constraint on `orders.idempotency_key`.
-- If an order with the same key is submitted twice, the duplicate request is rejected before reaching the broker adapter.
-
-### 4.2 Distributed Leader Lock
-- Prevents multi-instance execution hazard ("split-brain").
-- Redis mutex ensures that at any given millisecond, exactly **one worker process** can execute trading logic.
-
-### 4.3 Rate Limiting
-- Public and administrative endpoints are rate-limited using a sliding-window algorithm (default: 60 requests/minute per client).
-- Broker polling routines maintain 5-second to 10-second cache intervals to prevent exceeding Kotak Neo's API transaction limits.
+1. **Security Headers**:
+   FastAPI middleware injects security headers on every response:
+   - `X-Content-Type-Options: nosniff`
+   - `X-Frame-Options: DENY`
+   - `X-XSS-Protection: 1; mode=block`
+   - `Referrer-Policy: strict-origin-when-cross-origin`
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains` (Production)
+2. **CORS Restrictions**:
+   CORS is restricted strictly to verified frontend hostnames (`API_CORS_ORIGINS`).
+3. **Static IP Outbound Routing**:
+   Orders to static-IP bound brokers (Kotak Neo, Angel One) egress exclusively through verified, whitelisted static IP addresses.

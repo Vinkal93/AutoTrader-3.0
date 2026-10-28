@@ -64,7 +64,7 @@ export const Sidebar: React.FC = () => {
         {/* Brand Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-100 bg-white">
           <Link
-            href="/"
+            href="/dashboard"
             onClick={() => setMobileSidebarOpen(false)}
             className="flex items-center gap-3 overflow-hidden"
           >
