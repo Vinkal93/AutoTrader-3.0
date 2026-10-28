@@ -45,6 +45,13 @@ import {
   type ContractNoteImportResult,
   type FeeScheduleVersion,
   type TradeCycleFilterParams,
+  type WatchdogHealthStatus,
+  type SystemIncident,
+  type NotificationChannelConfig,
+  type AlertDeliveryLog,
+  type RecoveryReconciliationResult,
+  type RecoveryActionRequest,
+  type EmergencyRunbookStep,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -79,6 +86,11 @@ export const queryKeys = {
   systemEvents: ['systemEvents'] as const,
   failureModes: ['failureModes'] as const,
   liveAuthorization: ['liveAuthorization'] as const,
+  watchdogStatus: ['watchdogStatus'] as const,
+  systemIncidents: (status?: string) => ['systemIncidents', status] as const,
+  notificationChannels: ['notificationChannels'] as const,
+  alertDeliveries: ['alertDeliveries'] as const,
+  emergencyRunbook: ['emergencyRunbook'] as const,
 };
 
 // 1. Health
@@ -696,6 +708,102 @@ export function useImportContractNote() {
       queryClient.invalidateQueries({ queryKey: ['tradeCycles'] });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
       queryClient.invalidateQueries({ queryKey: queryKeys.performanceMetrics('TODAY') });
+    },
+  });
+}
+
+// 32. Phase 8: Watchdog System Health Status
+export function useWatchdogStatus(refetchInterval: number | false = 5000) {
+  return useQuery({
+    queryKey: queryKeys.watchdogStatus,
+    queryFn: async () => {
+      const res = await api.get<WatchdogHealthStatus>(API_ROUTES.watchdogStatus);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 2,
+  });
+}
+
+// 33. Phase 8: System Incidents History
+export function useSystemIncidents(statusFilter = 'ALL', refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.systemIncidents(statusFilter),
+    queryFn: async () => {
+      const res = await api.get<SystemIncident[]>(`${API_ROUTES.systemIncidents}?status=${statusFilter}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 34. Phase 8: Notification Channels Configuration
+export function useNotificationChannels() {
+  return useQuery({
+    queryKey: queryKeys.notificationChannels,
+    queryFn: async () => {
+      const res = await api.get<NotificationChannelConfig[]>(API_ROUTES.notificationsConfig);
+      return res.data;
+    },
+    staleTime: 30000,
+  });
+}
+
+// 35. Phase 8: Alert Deliveries Audit Log
+export function useAlertDeliveries(limit = 50) {
+  return useQuery({
+    queryKey: [...queryKeys.alertDeliveries, limit],
+    queryFn: async () => {
+      const res = await api.get<AlertDeliveryLog[]>(`${API_ROUTES.notificationsDeliveries}?limit=${limit}`);
+      return res.data;
+    },
+    refetchInterval: 15000,
+  });
+}
+
+// 36. Phase 8: Emergency Runbook Instructions
+export function useEmergencyRunbook() {
+  return useQuery({
+    queryKey: queryKeys.emergencyRunbook,
+    queryFn: async () => {
+      const res = await api.get<EmergencyRunbookStep[]>('/api/v1/watchdog/runbook');
+      return res.data;
+    },
+    staleTime: Infinity,
+  });
+}
+
+// 37. Phase 8: Recovery Action Execution
+export function useRecoveryAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: RecoveryActionRequest) => {
+      const res = await api.post<{ success: boolean; message: string; data?: any }>(
+        API_ROUTES.systemIncidentAction,
+        payload
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchdogStatus });
+      queryClient.invalidateQueries({ queryKey: ['systemIncidents'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
+    },
+  });
+}
+
+// 38. Phase 8: Recovery Reconciliation Trigger
+export function useTriggerReconciliation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post<RecoveryReconciliationResult>(API_ROUTES.recoveryReconcile);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchdogStatus });
+      queryClient.invalidateQueries({ queryKey: ['systemIncidents'] });
     },
   });
 }

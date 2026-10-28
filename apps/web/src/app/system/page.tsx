@@ -64,14 +64,23 @@ export default function SystemPage() {
           { label: 'System & Logs' },
         ]}
         actions={
-          <button
-            type="button"
-            onClick={handleRefreshAll}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 shadow-xs transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
-            Refresh Diagnostics
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/notifications"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-white border border-neutral-200 text-neutral-800 hover:bg-neutral-50 shadow-xs transition-colors"
+            >
+              <Shield className="w-3.5 h-3.5 text-rose-600" />
+              Watchdog & Alerts
+            </a>
+            <button
+              type="button"
+              onClick={handleRefreshAll}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 shadow-xs transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+              Refresh Diagnostics
+            </button>
+          </div>
         }
       />
 

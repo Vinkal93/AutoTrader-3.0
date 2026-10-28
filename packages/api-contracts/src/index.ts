@@ -467,6 +467,114 @@ export interface SystemEvent {
   timestamp: string;
 }
 
+// ---- Phase 8: Monitoring, Watchdog, Incidents & Recovery ----
+
+export const IncidentSeverity = {
+  INFO: 'INFO',
+  WARNING: 'WARNING',
+  CRITICAL: 'CRITICAL',
+} as const;
+export type IncidentSeverity = (typeof IncidentSeverity)[keyof typeof IncidentSeverity];
+
+export const IncidentStatus = {
+  ACTIVE: 'ACTIVE',
+  ACKNOWLEDGED: 'ACKNOWLEDGED',
+  RESOLVED: 'RESOLVED',
+} as const;
+export type IncidentStatus = (typeof IncidentStatus)[keyof typeof IncidentStatus];
+
+export interface SystemIncident {
+  id: string;
+  incidentType:
+    | 'WORKER_HEARTBEAT_TIMEOUT'
+    | 'BROKER_SESSION_EXPIRED'
+    | 'MARKET_FEED_STALE'
+    | 'ORDER_FEED_DISCONNECTED'
+    | 'STATIC_IP_MISMATCH'
+    | 'PROTECTIVE_SL_REJECTED'
+    | 'UNPROTECTED_POSITION'
+    | 'SCHEDULED_JOB_FAILURE'
+    | 'DATABASE_DOWN'
+    | 'CRITICAL_SYSTEM_ERROR';
+  title: string;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  details?: Record<string, unknown>;
+  triggeredAt: string;
+  acknowledgedAt?: string | null;
+  resolvedAt?: string | null;
+  resolutionNotes?: string | null;
+}
+
+export interface NotificationChannelConfig {
+  id: string;
+  channelType: 'EMAIL' | 'WEBHOOK' | 'TELEGRAM' | 'SLACK';
+  name: string;
+  isEnabled: boolean;
+  destination: string;
+  minSeverity: IncidentSeverity;
+  rateLimitPerMinute: number;
+}
+
+export interface AlertDeliveryLog {
+  id: string;
+  incidentId: string;
+  channelType: string;
+  destination: string;
+  status: 'DELIVERED' | 'FAILED' | 'DEDUPLICATED' | 'RETRYING';
+  attemptCount: number;
+  errorMessage?: string | null;
+  deliveredAt: string;
+}
+
+export interface WatchdogHealthStatus {
+  isHealthy: boolean;
+  workerHeartbeatStatus: 'ACTIVE' | 'TIMEOUT' | 'UNKNOWN';
+  lastHeartbeatAgeSeconds: number | null;
+  brokerSessionStatus: 'VALID' | 'EXPIRED' | 'NOT_CONFIGURED';
+  marketFeedStatus: 'LIVE' | 'STALE' | 'DISCONNECTED';
+  marketFeedStalenessSeconds: number | null;
+  orderFeedStatus: 'CONNECTED' | 'DISCONNECTED';
+  staticIpStatus: 'MATCHED' | 'MISMATCH' | 'UNVERIFIED';
+  currentStaticIp: string | null;
+  openUnprotectedPositionsCount: number;
+  unprotectedPositions: Array<{
+    tradingSymbol: string;
+    quantity: number;
+    optionType?: string;
+    openedAt: string;
+  }>;
+  activeIncidentsCount: number;
+  safeStateVerified: boolean;
+  recoveryModeActive: boolean;
+  blockNewEntriesReason: string | null;
+}
+
+export interface RecoveryReconciliationResult {
+  isSafeToResume: boolean;
+  openPositionsReconciled: number;
+  unprotectedPositionsCount: number;
+  orphanedOrdersDetected: number;
+  discrepancies: string[];
+  reconciledAt: string;
+}
+
+export interface RecoveryActionRequest {
+  action: 'RUN_RECONCILIATION' | 'ACKNOWLEDGE_INCIDENT' | 'RESOLVE_INCIDENT' | 'ESCALATE_RISK_LOCK' | 'RESET_RECOVERY';
+  incidentId?: string;
+  resolutionNotes?: string;
+  operatorNotes?: string;
+}
+
+export interface EmergencyRunbookStep {
+  stepNumber: number;
+  title: string;
+  actionRequired: string;
+  toolOrLocation: string;
+  caveat?: string;
+  criticalNotice?: string;
+}
+
 // ---- Trade Cycles & Detailed Executions ----
 
 export interface ChargeBreakdown {
@@ -1028,6 +1136,13 @@ export const API_ROUTES = {
   analyticsComprehensive: '/api/v1/analytics/comprehensive',
   analyticsExport: '/api/v1/analytics/export',
   systemEvents: '/api/v1/system/events',
+  systemIncidents: '/api/v1/system/incidents',
+  systemIncidentAction: '/api/v1/system/incidents/action',
+  watchdogStatus: '/api/v1/watchdog/status',
+  watchdogRunCheck: '/api/v1/watchdog/check',
+  notificationsConfig: '/api/v1/notifications/config',
+  notificationsDeliveries: '/api/v1/notifications/deliveries',
+  recoveryReconcile: '/api/v1/recovery/reconcile',
   systemFailureModes: '/api/v1/system/failure-modes',
   systemLiveAuthorization: '/api/v1/system/live-authorization',
 } as const;

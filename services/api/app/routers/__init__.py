@@ -12,10 +12,12 @@ from app.routers.strategies import router as strategies_router
 from app.routers.system import router as system_router
 from app.routers.trade_cycles import router as trade_cycles_router
 from app.routers.trades import router as trades_router
+from app.routers.watchdog import router as watchdog_router
 
 all_routers = [
     health_router,
     system_router,
+    watchdog_router,
     broker_router,
     account_router,
     positions_router,

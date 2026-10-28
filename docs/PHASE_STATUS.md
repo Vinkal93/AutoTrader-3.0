@@ -175,11 +175,36 @@ The platform has reached full structural completion for **Phase 7: Trading Analy
 
 ---
 
-## 10. Safety Gate: Live Real-Money Trading Lock
+## 10. Phase 8 Completion Scorecard: Monitoring and Recovery
+
+The platform has reached full structural completion for **Phase 8: Independent System Monitoring & Recovery**.
+
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Worker Heartbeat Surveillance** | Separate-process watchdog monitors heartbeat timestamp; flags `TIMEOUT` when age exceeds 15 seconds | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`monitoring-recovery.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/monitoring-recovery.test.ts) |
+| **Broker Session Expiry Detection** | Detects invalidated/expired Kotak Neo JWT/TOTP tokens, triggers `CRITICAL` alert, and blocks order dispatch | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`WatchdogDiagnosticCards.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/WatchdogDiagnosticCards.tsx) |
+| **Market Feed Staleness Detection** | Flags `STALE` status if market ticks stall for >30 seconds during active exchange hours (09:15–15:30 IST) | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`monitoring-recovery.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/monitoring-recovery.test.ts) |
+| **Order Feed Disconnect Monitoring** | Monitors broker WebSocket/order stream connectivity; inhibits new entries upon disconnect | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`WatchdogDiagnosticCards.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/WatchdogDiagnosticCards.tsx) |
+| **Static-IP / Session Mismatch Guard** | Verifies request source IP matches whitelisted static IP required by Kotak Neo regulatory gateway | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`WatchdogDiagnosticCards.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/WatchdogDiagnosticCards.tsx) |
+| **Rejected Protective Stop-Loss Escalation** | Immediately raises `CRITICAL` alert and transitions state to `RISK_LOCKED` if an SL-L exit is rejected | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py), [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py) |
+| **Open Unprotected Position Detection** | Scans for filled long positions lacking confirmed protective stop-loss orders; alerts operator | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`monitoring-recovery.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/monitoring-recovery.test.ts) |
+| **Scheduled Trading Job Failure Alerts** | Tracks 12:20 PM IST scheduled strategy run execution; logs alarms on missing candles or exceptions | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`strategy_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/strategy_engine.py) |
+| **Infrastructure Health Telemetry** | Continually verifies PostgreSQL latency, pool limits, and background worker memory/connectivity | **COMPLETED** | [`health.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/health.py), [`WatchdogHealthBanner.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/WatchdogHealthBanner.tsx) |
+| **Persisted System Incident History** | Dedicated `system_incidents` database table tracking type, severity, status, and resolution history | **COMPLETED** | [`entities.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/models/entities.py), [`IncidentManagementStream.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/IncidentManagementStream.tsx) |
+| **Configurable Notification Channels** | Configurable channels for Email, Webhooks, Telegram, and Slack with severity and rate thresholds | **COMPLETED** | [`NotificationChannelsPanel.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/NotificationChannelsPanel.tsx), [`watchdog.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/watchdog.py) |
+| **Critical Alert Deduplication & Retries** | 300-second deduplication window prevents notification storms; delivery logs track retries/status | **COMPLETED** | [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py), [`monitoring-recovery.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/monitoring-recovery.test.ts) |
+| **Recovery Mode Reconciliation Gate** | Prohibits resuming trading until broker positions and orderbook are fully reconciled with local DB | **COMPLETED** | [`RecoveryModePanel.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/RecoveryModePanel.tsx), [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py) |
+| **Manual Emergency Runbook & Caveat** | 5-step manual runbook explicitly documenting that watchdog cannot square off when broker is down | **COMPLETED** | [`EmergencyRunbookModal.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/EmergencyRunbookModal.tsx), [`test_monitoring.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/tests/test_monitoring.py) |
+| **Duplicate BUY Prevention Guard** | Hard invariant: System failures, worker restarts, or watchdog checks NEVER trigger automatic duplicate BUY | **COMPLETED** | [`execution_engine.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/execution_engine.py), [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py) |
+| **Risk-Lock Escalation** | When platform cannot establish safe state, immediately blocks new entries and escalates to `RISK_LOCKED` | **COMPLETED** | [`WatchdogHealthBanner.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/components/monitoring/WatchdogHealthBanner.tsx), [`monitoring_service.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/monitoring_service.py) |
+
+---
+
+## 11. Safety Gate: Live Real-Money Trading Lock
 
 > [!CAUTION]
 > **LIVE TRADING SAFETY GATE ACTIVE:**
 > All trade cycles, orders, and execution simulations operate strictly in **PAPER mode**.
 > Real-money live trading remains permanently disabled until explicit four-part operator verification is completed.
 >
-> In accordance with instructions, work stops cleanly after Phase 7.
+> In accordance with instructions, work stops cleanly after Phase 8.

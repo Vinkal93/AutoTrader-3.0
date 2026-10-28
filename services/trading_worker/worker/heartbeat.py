@@ -70,7 +70,31 @@ class HeartbeatManager:
         logger.debug(
             f"Heartbeat from {self.worker_id} ({self.hostname}) - State: {engine_state}, Mode: {trading_mode}, Leader: {self.is_leader}"
         )
-        # In a real environment with DB connection, this inserts/updates worker_heartbeats table.
+        if self.db_session_factory:
+            try:
+                from sqlalchemy import select
+                from app.models.entities import WorkerHeartbeat
+                async with self.db_session_factory() as session:
+                    stmt = select(WorkerHeartbeat).where(WorkerHeartbeat.worker_id == self.worker_id)
+                    hb = (await session.execute(stmt)).scalars().first()
+                    if hb:
+                        hb.engine_state = engine_state
+                        hb.trading_mode = trading_mode
+                        hb.is_leader = self.is_leader
+                        hb.last_heartbeat_at = now
+                    else:
+                        hb = WorkerHeartbeat(
+                            worker_id=self.worker_id,
+                            hostname=self.hostname,
+                            engine_state=engine_state,
+                            trading_mode=trading_mode,
+                            is_leader=self.is_leader,
+                            last_heartbeat_at=now,
+                        )
+                        session.add(hb)
+                    await session.commit()
+            except Exception as e:
+                logger.debug(f"Failed to persist heartbeat in DB: {e}")
 
     async def start(self):
         self._running = True
