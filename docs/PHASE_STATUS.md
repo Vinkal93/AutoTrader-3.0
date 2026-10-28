@@ -130,16 +130,31 @@ The platform has reached full structural completion for **Phase 5: Execution and
 
 ---
 
-## 8. Safety Gate: Real-Money Trading Authorization
+## 8. Phase 6 Completion Scorecard: Financial Accounting
+
+The platform has reached full structural completion for **Phase 6: Financial Accounting & Fee Audit**.
+
+| Deliverable Category | Scope Description | Status | Verification Reference |
+| :--- | :--- | :---: | :--- |
+| **Trade Cycle Reconstruction** | Reconstructs complete trade cycles linking confirmed BUY fills with subsequent SELL executions | **COMPLETED** | [`financial_accounting.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/financial_accounting.py) |
+| **Gross Realized P&L Calculation** | Computes gross P&L strictly from actual filled quantities and prices: $(\text{Sell} - \text{Buy}) \times \text{Qty}$ | **COMPLETED** | [`financial_accounting.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/financial_accounting.py), [`financial-accounting.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/financial-accounting.test.ts) |
+| **Non-Interchangeable Margin & Cash** | Explicitly isolates `availableMargin`, `usedMargin`, `availableCash`, and `totalCollateral` | **COMPLETED** | [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/funds/page.tsx) |
+| **Historical Balance Snapshots** | Point-in-time snapshots ledger of cash, margins, and collateral with timestamps | **COMPLETED** | [`account.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/account.py), [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/funds/page.tsx) |
+| **Itemized Statutory Deductions** | Complete itemization: Brokerage (₹40 round-trip), STT, Exchange Txn, GST (18%), SEBI, Stamp Duty | **COMPLETED** | [`financial_accounting.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/financial_accounting.py) |
+| **Tariff Versioning Model** | Version-controlled tariff schedules: v2024.2 (Budget 2024 revised 0.1% STT) and v2024.1 (0.0625%) | **COMPLETED** | [`financial_accounting.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/financial_accounting.py) |
+| **Confirmed vs Estimated Fee Labels** | Distinguishes `ACTUAL` (broker contract note confirmed) vs `ESTIMATED` (tariff formula estimate) | **COMPLETED** | [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/trades/page.tsx), [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/funds/page.tsx) |
+| **Contract Note Importer & Reconciler** | Ingests official broker contract notes, verifies ledger debits, and detects tariff discrepancies | **COMPLETED** | [`financial_accounting.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/services/financial_accounting.py), [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/funds/page.tsx) |
+| **Discrepancy Reporting Invariant** | Detects and highlights fee rounding and tariff discrepancies without silently modifying audit records | **COMPLETED** | [`financial-accounting.test.ts`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/__tests__/financial-accounting.test.ts) |
+| **Searchable & Filterable Trade History** | Filter bar: Date range, Symbol search, State, Mode, and CE/PE filter; expandable fill drawer | **COMPLETED** | [`page.tsx`](file:///d:/Coding/Auto%20Trader%203.0/apps/web/src/app/trades/page.tsx) |
+| **RFC 4180 CSV Export** | One-click real data export with 22 financial columns (`/api/v1/trade-cycles/export`) | **COMPLETED** | [`trade_cycles.py`](file:///d:/Coding/Auto%20Trader%203.0/services/api/app/routers/trade_cycles.py) |
+
+---
+
+## 9. Safety Gate: Live Real-Money Trading Lock
 
 > [!CAUTION]
 > **LIVE TRADING SAFETY GATE ACTIVE:**
-> As mandated by Phase 5 requirements, real-money live order submission is **NOT automatically enabled**.
-> All order submissions default strictly to **PAPER simulation execution**.
-> Activating LIVE execution requires:
-> 1. Explicit operator consent token submitted to `/api/v1/system/live-authorization`.
-> 2. Verified active broker connection with Kotak Neo (`BrokerConnectionState.CONNECTED`).
-> 3. Static IP compliance verification (`static_ip_compliant == true`).
-> 4. Non-zero approved risk limits (`maxDailyLoss`, `maxRiskPerTrade`, `minTradingFunds`).
-> 
-> In accordance with instructions, the platform halts after Phase 5.
+> All trade cycles, orders, and execution simulations operate strictly in **PAPER mode**.
+> Real-money live trading remains permanently disabled until explicit four-part operator verification is completed.
+>
+> In accordance with instructions, work stops cleanly after Phase 6.

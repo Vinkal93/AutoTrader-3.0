@@ -809,6 +809,83 @@ export interface FailureModeItem {
   unprotectedWindowSeconds: number;
 }
 
+// ---- Financial Accounting & Contract Notes (Phase 6) ----
+
+export interface ContractNoteEntry {
+  tradeId?: string;
+  orderId?: string;
+  tradingSymbol: string;
+  side: OrderSide;
+  quantity: number;
+  price: string;
+  brokerage: string;
+  stt: string;
+  exchangeTurnover: string;
+  gst: string;
+  sebiCharges: string;
+  stampDuty: string;
+}
+
+export interface ContractNoteImportRequest {
+  contractNoteNumber: string;
+  tradeDate: string; // YYYY-MM-DD
+  settlementNumber?: string;
+  entries: ContractNoteEntry[];
+}
+
+export interface ContractNoteDiscrepancy {
+  cycleId: string;
+  tradingSymbol: string;
+  estimatedFee: string;
+  confirmedFee: string;
+  difference: string;
+  reason: string;
+}
+
+export interface ContractNoteImportResult {
+  contractNoteNumber: string;
+  tradeDate: string;
+  importedCount: number;
+  reconciledCyclesCount: number;
+  discrepanciesCount: number;
+  discrepancies: ContractNoteDiscrepancy[];
+  totalConfirmedCharges: string;
+  importedAt: string;
+}
+
+export interface AccountSnapshotRecord {
+  id: string;
+  availableCash: string;
+  usedMargin: string;
+  availableMargin: string;
+  totalCollateral: string;
+  unrealizedPnl: string;
+  realizedPnl: string;
+  timestamp: string;
+}
+
+export interface FeeScheduleVersion {
+  version: string;
+  effectiveFrom: string;
+  brokeragePerOrder: string;
+  sttRateOptionsSell: string;
+  exchangeTxnRate: string;
+  gstRate: string;
+  sebiRatePerCrore: string;
+  stampDutyRate: string;
+  description: string;
+}
+
+export interface TradeCycleFilterParams {
+  startDate?: string;
+  endDate?: string;
+  symbol?: string;
+  optionType?: OptionType;
+  status?: TradeCycleState;
+  strategyId?: string;
+  mode?: TradingMode;
+}
+
 // ---- API Route Definitions ----
 
 export const API_ROUTES = {
@@ -820,6 +897,7 @@ export const API_ROUTES = {
   brokerConnect: '/api/v1/broker/connect',
   brokerDisconnect: '/api/v1/broker/disconnect',
   accountFunds: '/api/v1/account/funds',
+  accountSnapshots: '/api/v1/account/snapshots',
   positions: '/api/v1/positions',
   orders: '/api/v1/orders',
   ordersSubmit: '/api/v1/orders/submit',
@@ -827,6 +905,10 @@ export const API_ROUTES = {
   ordersReconcile: '/api/v1/orders/reconcile',
   trades: '/api/v1/trades',
   tradeCycles: '/api/v1/trade-cycles',
+  tradeCyclesExport: '/api/v1/trade-cycles/export',
+  contractNotesImport: '/api/v1/funds/contract-notes/import',
+  contractNotesReconcile: '/api/v1/funds/contract-notes/reconcile',
+  feeSchedules: '/api/v1/funds/fee-schedules',
   niftyQuote: '/api/v1/market/nifty',
   candles: '/api/v1/market/candles',
   optionChain: '/api/v1/market/option-chain',

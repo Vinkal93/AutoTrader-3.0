@@ -84,6 +84,15 @@ from app.schemas.execution_engine import (
     ReconciliationDiscrepancy,
     ReconciliationReport,
 )
+from app.schemas.financial_accounting import (
+    AccountSnapshotRecord,
+    ContractNoteDiscrepancy,
+    ContractNoteEntry,
+    ContractNoteImportRequest,
+    ContractNoteImportResult,
+    FeeScheduleVersion,
+    TradeCycleFilterParams,
+)
 
 __all__ = [
     "CamelModel",
@@ -148,4 +157,11 @@ __all__ = [
     "ReconciliationReport",
     "LiveAuthorizationStatus",
     "FailureModeItem",
+    "ContractNoteEntry",
+    "ContractNoteImportRequest",
+    "ContractNoteDiscrepancy",
+    "ContractNoteImportResult",
+    "AccountSnapshotRecord",
+    "FeeScheduleVersion",
+    "TradeCycleFilterParams",
 ]

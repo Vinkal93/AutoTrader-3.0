@@ -38,6 +38,11 @@ import {
   type ReconciliationReport,
   type LiveAuthorizationStatus,
   type FailureModeItem,
+  type AccountSnapshotRecord,
+  type ContractNoteImportRequest,
+  type ContractNoteImportResult,
+  type FeeScheduleVersion,
+  type TradeCycleFilterParams,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -46,10 +51,13 @@ export const queryKeys = {
   systemStatus: ['systemStatus'] as const,
   brokerConnection: ['brokerConnection'] as const,
   accountFunds: ['accountFunds'] as const,
+  accountSnapshots: ['accountSnapshots'] as const,
+  feeSchedules: ['feeSchedules'] as const,
   positions: ['positions'] as const,
   orders: ['orders'] as const,
   trades: ['trades'] as const,
-  tradeCycles: (page: number, pageSize: number) => ['tradeCycles', page, pageSize] as const,
+  tradeCycles: (page: number, pageSize: number, filters?: Partial<TradeCycleFilterParams>) =>
+    ['tradeCycles', page, pageSize, filters] as const,
   tradeCycleDetail: (id: string) => ['tradeCycleDetail', id] as const,
   performanceMetrics: (timeframe: string) => ['performanceMetrics', timeframe] as const,
   riskAllowance: ['riskAllowance'] as const,
@@ -224,11 +232,26 @@ export function useSystemEvents(limit = 50, refetchInterval: number | false = 10
 }
 
 // 13. Trade Cycles
-export function useTradeCycles(page = 1, pageSize = 20, refetchInterval: number | false = 10000) {
+export function useTradeCycles(
+  page = 1,
+  pageSize = 20,
+  filters?: Partial<TradeCycleFilterParams>,
+  refetchInterval: number | false = 10000
+) {
   return useQuery({
-    queryKey: queryKeys.tradeCycles(page, pageSize),
+    queryKey: queryKeys.tradeCycles(page, pageSize, filters),
     queryFn: async () => {
-      const res = await api.get<TradeCycleDetail[]>(`${API_ROUTES.tradeCycles}?page=${page}&page_size=${pageSize}`);
+      const qp = new URLSearchParams();
+      qp.set('page', String(page));
+      qp.set('page_size', String(pageSize));
+      if (filters?.startDate) qp.set('startDate', filters.startDate);
+      if (filters?.endDate) qp.set('endDate', filters.endDate);
+      if (filters?.symbol) qp.set('symbol', filters.symbol);
+      if (filters?.status) qp.set('state', filters.status);
+      if (filters?.mode) qp.set('mode', filters.mode);
+      if (filters?.strategyId) qp.set('strategyId', filters.strategyId);
+
+      const res = await api.get<TradeCycleDetail[]>(`${API_ROUTES.tradeCycles}?${qp.toString()}`);
       return res.data;
     },
     refetchInterval,
@@ -600,6 +623,47 @@ export function useGrantLiveAuthorization() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.liveAuthorization });
       queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
+    },
+  });
+}
+
+// 29. Phase 6: Account Snapshots Ledger
+export function useAccountSnapshots(limit = 50, refetchInterval: number | false = 15000) {
+  return useQuery({
+    queryKey: [...queryKeys.accountSnapshots, limit],
+    queryFn: async () => {
+      const res = await api.get<AccountSnapshotRecord[]>(`${API_ROUTES.accountSnapshots}?limit=${limit}`);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 30. Phase 6: Fee Schedules & Tariffs
+export function useFeeSchedules() {
+  return useQuery({
+    queryKey: queryKeys.feeSchedules,
+    queryFn: async () => {
+      const res = await api.get<FeeScheduleVersion[]>(API_ROUTES.feeSchedules);
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+}
+
+// 31. Phase 6: Import Contract Note
+export function useImportContractNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: ContractNoteImportRequest) => {
+      const res = await api.post<ContractNoteImportResult>(API_ROUTES.contractNotesImport, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tradeCycles'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.performanceMetrics('TODAY') });
     },
   });
 }
