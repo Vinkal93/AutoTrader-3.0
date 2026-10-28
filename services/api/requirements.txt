@@ -15,4 +15,4 @@ redis>=5.0.4,<6.0.0
 pytz>=2024.1
 pytest>=8.2.0,<8.3.0
 pytest-asyncio>=0.23.7,<0.24.0
-kotak-neo-api>=1.0.0; sys_platform != "win32" or python_version < "3.13"
+kotakneoapi>=3.0.0
