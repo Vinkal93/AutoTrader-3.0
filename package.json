@@ -1,0 +1,23 @@
+{
+  "name": "nifty-auto-trader",
+  "version": "3.0.0",
+  "private": true,
+  "description": "NIFTY Auto Trader 3.0 — Production-grade automated NIFTY options trading platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm -w apps/web run dev",
+    "build:web": "npm -w apps/web run build",
+    "lint:web": "npm -w apps/web run lint",
+    "type-check:web": "npm -w apps/web run type-check",
+    "test:web": "npm -w apps/web run test",
+    "contracts:build": "npm -w packages/api-contracts run build",
+    "contracts:check": "npm -w packages/api-contracts run type-check"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
