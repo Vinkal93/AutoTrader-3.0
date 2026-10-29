@@ -83,7 +83,7 @@ class CurrentUser:
 
     @property
     def is_admin(self) -> bool:
-        return self.role in ("admin", "service_role")
+        return self.role in ("admin", "service_role", "super_admin")
 
 
 async def get_current_user(
@@ -280,3 +280,27 @@ async def get_or_create_google_user(
         auth_provider="google",
         avatar_url=avatar_url,
     )
+
+
+
+async def require_super_admin(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CurrentUser:
+    """Authorize Super Admin role on backend (Task 1 & 8).
+    Verifies user permissions from database session to block unauthorized elevation.
+    """
+    stmt = select(User).where(User.id == current_user.id).limit(1)
+    res = await db.execute(stmt)
+    user_entity = res.scalars().first()
+
+    role = (getattr(user_entity, "role", None) or current_user.role or "trader").lower()
+    if role not in ("super_admin", "admin", "service_role"):
+        logger.warning(
+            f"Unauthorized super-admin access rejected for user {current_user.id} ({current_user.email}) with role '{role}'"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Super Administrator privileges required.",
+        )
+    return current_user

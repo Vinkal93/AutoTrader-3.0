@@ -1232,6 +1232,21 @@ export const API_ROUTES = {
   brokerInitiateAuth: '/api/v1/broker/connections/initiate-auth',
   brokerAuthCallback: '/api/v1/broker/connections/callback',
   brokerIpCheck: '/api/v1/broker/ip-check',
+
+  // Super Admin & SaaS Management Routes (Phase 8)
+  adminDashboard: '/api/v1/admin/dashboard',
+  adminUsers: '/api/v1/admin/users',
+  adminUserDetail: '/api/v1/admin/users/:id',
+  adminUserStatus: '/api/v1/admin/users/:id/status',
+  adminBrokers: '/api/v1/admin/brokers',
+  adminBrokerDetail: '/api/v1/admin/brokers/:id',
+  adminPlans: '/api/v1/admin/plans',
+  adminPlanDetail: '/api/v1/admin/plans/:id',
+  adminInvoices: '/api/v1/admin/invoices',
+  adminBillingWebhook: '/api/v1/admin/billing/webhook',
+  adminFeatureFlags: '/api/v1/admin/feature-flags',
+  adminAuditLogs: '/api/v1/admin/audit-logs',
+  adminEmergencyControl: '/api/v1/admin/operations/emergency-control',
 } as const;
 
 // ---- Auth & Profile Models ----
@@ -1427,4 +1442,209 @@ export interface IpCheckResponse {
   isWhitelisted: boolean;
   brokerTarget: string;
   timestamp: string;
+}
+
+// ==============================================================================
+// PHASE 8: SUPER ADMIN AND SAAS MANAGEMENT INTERFACES
+// ==============================================================================
+
+export type UserRole = 'super_admin' | 'admin' | 'trader' | 'support';
+
+export interface AdminDashboardMetrics {
+  totalRegisteredUsers: number;
+  activeUsers24h: number;
+  totalBrokerConnections: number;
+  activeBrokerConnections: number;
+  brokerConnectionsByProvider: Record<string, number>;
+  connectionFailures24h: number;
+  activeSubscriptions: number;
+  totalRevenueINR: string;
+  monthlyRecurringRevenueINR: string;
+  systemErrors24h: number;
+  workerQueueHealth: {
+    workerId: string;
+    isLeader: boolean;
+    state: EngineState;
+    uptimeSeconds: number;
+    lastHeartbeat: string;
+  };
+  tradingFeatureAvailability: {
+    paperTradingEnabled: boolean;
+    liveTradingEnabled: boolean;
+    globalTradingHalted: boolean;
+  };
+  openIncidentsCount: number;
+  timestamp: string;
+}
+
+export interface AdminUserListItem {
+  id: string;
+  email: string;
+  fullName: string | null;
+  role: UserRole;
+  isActive: boolean;
+  emailVerified: boolean;
+  kycStatus: string;
+  planName: string;
+  subscriptionStatus: string;
+  brokerConnectionsCount: number;
+  connectedBrokers: string[];
+  createdAt: string;
+  lastLoginAt?: string | null;
+}
+
+export interface AdminUserDetail extends AdminUserListItem {
+  phoneMasked?: string | null;
+  panMasked?: string | null;
+  featureOverrides?: Record<string, boolean>;
+  recentOrdersCount: number;
+  activePositionsCount: number;
+  auditTrail: {
+    id: string;
+    action: string;
+    performedBy: string;
+    reason?: string | null;
+    timestamp: string;
+  }[];
+}
+
+export interface AdminUserStatusUpdate {
+  isActive: boolean;
+  role?: UserRole;
+  reason: string;
+}
+
+export interface AdminBrokerConfig {
+  id: string;
+  name: string;
+  providerCode: string;
+  authMethod: 'OAUTH2' | 'API_KEY_SECRET' | 'PASSWORD_2FA';
+  isEnabled: boolean;
+  isMaintenanceMode: boolean;
+  isPartnerApproved: boolean;
+  supportsLiveOrders: boolean;
+  supportsWebsockets: boolean;
+  environmentEndpoints: {
+    authUrl: string;
+    apiBaseUrl: string;
+    wsUrl?: string;
+  };
+  rateLimits: {
+    ordersPerSecond: number;
+    quotesPerMinute: number;
+  };
+  activeConnectionsCount: number;
+  lastHealthCheck: string;
+  healthStatus: 'HEALTHY' | 'DEGRADED' | 'OUTAGE';
+}
+
+export interface AdminBrokerUpdateRequest {
+  isEnabled?: boolean;
+  isMaintenanceMode?: boolean;
+  isPartnerApproved?: boolean;
+  supportsLiveOrders?: boolean;
+  rateLimits?: {
+    ordersPerSecond?: number;
+    quotesPerMinute?: number;
+  };
+  reason: string;
+}
+
+export interface AdminPlan {
+  id: string;
+  name: string;
+  description: string;
+  billingInterval: 'MONTHLY' | 'ANNUAL';
+  priceINR: string;
+  isActive: boolean;
+  maxBrokerConnections: number;
+  maxActiveStrategies: number;
+  liveTradingEnabled: boolean;
+  historicalRetentionDays: number;
+  reportingAccess: boolean;
+  webhookAlertsEnabled: boolean;
+  subscribersCount: number;
+}
+
+export interface AdminPlanCreateUpdate {
+  name: string;
+  description: string;
+  priceINR: string;
+  billingInterval: 'MONTHLY' | 'ANNUAL';
+  isActive?: boolean;
+  maxBrokerConnections: number;
+  maxActiveStrategies: number;
+  liveTradingEnabled: boolean;
+  historicalRetentionDays: number;
+  reportingAccess: boolean;
+  webhookAlertsEnabled: boolean;
+}
+
+export interface AdminInvoice {
+  id: string;
+  userId: string;
+  userEmail: string;
+  planId: string;
+  planName: string;
+  amountINR: string;
+  status: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
+  paymentProvider: 'RAZORPAY' | 'STRIPE';
+  paymentId: string | null;
+  invoiceNumber: string;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  createdAt: string;
+}
+
+export interface PaymentWebhookPayload {
+  eventId: string;
+  provider: 'RAZORPAY' | 'STRIPE';
+  eventType: string;
+  signature: string;
+  payload: Record<string, any>;
+}
+
+export interface PaymentWebhookResult {
+  processed: boolean;
+  eventId: string;
+  status: string;
+  invoiceId?: string;
+  subscriptionId?: string;
+  message: string;
+}
+
+export interface AdminFeatureFlag {
+  key: string;
+  description: string;
+  isGloballyEnabled: boolean;
+  enabledUserIdsCount: number;
+  updatedAt: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  actorUserId: string | null;
+  actorEmail: string | null;
+  action: string;
+  entityName: string;
+  entityId: string;
+  details?: Record<string, any> | null;
+  ipAddress?: string | null;
+  timestamp: string;
+}
+
+export interface PlatformEmergencyControlRequest {
+  action: 'HALT_ALL_TRADING' | 'DISABLE_NEW_ENTRIES' | 'RESUME_NORMAL_TRADING';
+  reason: string;
+  requireAuditConfirmation: boolean;
+}
+
+export interface PlatformEmergencyControlResponse {
+  action: string;
+  globalTradingHalted: boolean;
+  newEntriesDisabled: boolean;
+  appliedBy: string;
+  appliedAt: string;
+  affectedBrokersCount: number;
+  message: string;
 }

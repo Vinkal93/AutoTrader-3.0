@@ -1,6 +1,7 @@
 """API routers aggregate export."""
 
 from app.routers.account import router as account_router
+from app.routers.admin import router as admin_router
 from app.routers.analytics import router as analytics_router
 from app.routers.auth import router as auth_router
 from app.routers.broker import router as broker_router

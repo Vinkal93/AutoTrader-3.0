@@ -37,6 +37,18 @@ import {
   type StrategyControlRequest,
   type StrategyControlResponse,
   type WorkerStatusResponse,
+  type AdminDashboardMetrics,
+  type AdminUserListItem,
+  type AdminUserDetail,
+  type AdminUserStatusUpdate,
+  type AdminBrokerConfig,
+  type AdminBrokerUpdateRequest,
+  type AdminPlan,
+  type AdminPlanCreateUpdate,
+  type AdminInvoice,
+  type AdminAuditLog,
+  type PlatformEmergencyControlRequest,
+  type PlatformEmergencyControlResponse,
   type OrderSubmissionRequest,
   type OrderSubmissionResult,
   type OrderCancelRequest,
@@ -105,6 +117,13 @@ export const queryKeys = {
   strategySchedule: (id: string) => ['strategySchedule', id] as const,
   workerStatus: ['workerStatus'] as const,
   niftyStrategyTemplate: ['niftyStrategyTemplate'] as const,
+  adminDashboard: ['adminDashboard'] as const,
+  adminUsers: (search?: string) => ['adminUsers', search] as const,
+  adminUserDetail: (id: string) => ['adminUserDetail', id] as const,
+  adminBrokers: ['adminBrokers'] as const,
+  adminPlans: ['adminPlans'] as const,
+  adminInvoices: ['adminInvoices'] as const,
+  adminAuditLogs: ['adminAuditLogs'] as const,
   dashboardOverview: ['dashboardOverview'] as const,
   systemEvents: ['systemEvents'] as const,
   failureModes: ['failureModes'] as const,
@@ -1071,6 +1090,166 @@ export function useUpdateBrokerPermissions() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.brokerPermissions(variables.connectionId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
+    },
+  });
+}
+
+// ==============================================================================
+// PHASE 8: SUPER ADMIN AND SAAS MANAGEMENT HOOKS
+// ==============================================================================
+
+export function useAdminDashboard(refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.adminDashboard,
+    queryFn: async () => {
+      const res = await api.get<AdminDashboardMetrics>(API_ROUTES.adminDashboard);
+      return res.data;
+    },
+    refetchInterval,
+  });
+}
+
+export function useAdminUsers(search?: string, limit = 50, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.adminUsers(search),
+    queryFn: async () => {
+      const qp = new URLSearchParams();
+      if (search) qp.set('search', search);
+      qp.set('limit', limit.toString());
+      qp.set('offset', offset.toString());
+      const res = await api.get<AdminUserListItem[]>(`${API_ROUTES.adminUsers}?${qp.toString()}`);
+      return res.data;
+    },
+  });
+}
+
+export function useAdminUserDetail(userId?: string) {
+  return useQuery({
+    queryKey: userId ? queryKeys.adminUserDetail(userId) : ['adminUserDetail'],
+    queryFn: async () => {
+      if (!userId) return null;
+      const res = await api.get<AdminUserDetail>(`/api/v1/admin/users/${userId}`);
+      return res.data;
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: AdminUserStatusUpdate;
+    }) => {
+      const res = await api.post<AdminUserDetail>(`/api/v1/admin/users/${userId}/status`, payload);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUserDetail(data.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminDashboard });
+    },
+  });
+}
+
+export function useAdminBrokers() {
+  return useQuery({
+    queryKey: queryKeys.adminBrokers,
+    queryFn: async () => {
+      const res = await api.get<AdminBrokerConfig[]>(API_ROUTES.adminBrokers);
+      return res.data;
+    },
+  });
+}
+
+export function useUpdateBrokerConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      brokerId,
+      payload,
+    }: {
+      brokerId: string;
+      payload: AdminBrokerUpdateRequest;
+    }) => {
+      const res = await api.put<AdminBrokerConfig>(`/api/v1/admin/brokers/${brokerId}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminBrokers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminDashboard });
+    },
+  });
+}
+
+export function useAdminPlans() {
+  return useQuery({
+    queryKey: queryKeys.adminPlans,
+    queryFn: async () => {
+      const res = await api.get<AdminPlan[]>(API_ROUTES.adminPlans);
+      return res.data;
+    },
+  });
+}
+
+export function useSavePlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      payload,
+    }: {
+      planId: string;
+      payload: AdminPlanCreateUpdate;
+    }) => {
+      const res = await api.post<AdminPlan>(`/api/v1/admin/plans/${planId}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminPlans });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminDashboard });
+    },
+  });
+}
+
+export function useAdminInvoices(limit = 50) {
+  return useQuery({
+    queryKey: queryKeys.adminInvoices,
+    queryFn: async () => {
+      const res = await api.get<AdminInvoice[]>(`${API_ROUTES.adminInvoices}?limit=${limit}`);
+      return res.data;
+    },
+  });
+}
+
+export function useAdminAuditLogs(limit = 50) {
+  return useQuery({
+    queryKey: queryKeys.adminAuditLogs,
+    queryFn: async () => {
+      const res = await api.get<AdminAuditLog[]>(`${API_ROUTES.adminAuditLogs}?limit=${limit}`);
+      return res.data;
+    },
+  });
+}
+
+export function usePlatformEmergencyControl() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: PlatformEmergencyControlRequest) => {
+      const res = await api.post<PlatformEmergencyControlResponse>(
+        API_ROUTES.adminEmergencyControl,
+        payload
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminDashboard });
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemStatus });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminAuditLogs });
     },
   });
 }

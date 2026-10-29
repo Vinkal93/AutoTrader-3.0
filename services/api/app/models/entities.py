@@ -73,6 +73,7 @@ class User(Base):
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     auth_provider: Mapped[str] = mapped_column(String(50), default="email", nullable=False)
+    role: Mapped[str] = mapped_column(String(50), default="trader", nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
@@ -90,6 +91,7 @@ class User(Base):
     notifications: Mapped[List["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     subscription: Mapped[Optional["Subscription"]] = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
     compliance_approvals: Mapped[List["ComplianceApproval"]] = relationship("ComplianceApproval", back_populates="user", cascade="all, delete-orphan")
+    invoices: Mapped[List["Invoice"]] = relationship("Invoice", back_populates="user", cascade="all, delete-orphan")
 
 
 class Profile(Base):
@@ -661,6 +663,40 @@ class Subscription(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="subscription")
     plan: Mapped["Plan"] = relationship("Plan", back_populates="subscriptions")
+
+class Invoice(Base):
+    """Confirmed billing and payment records (Phase 8 Task 6)."""
+    __tablename__ = "invoices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    subscription_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True, index=True)
+    plan_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    amount_inr: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="PAID", nullable=False)
+    payment_provider: Mapped[str] = mapped_column(String(50), default="RAZORPAY", nullable=False)
+    payment_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True, index=True)
+    invoice_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    billing_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    billing_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="invoices")
+
+
+class PaymentWebhookLog(Base):
+    """Server-side verified webhook audit ledger (Phase 8 Task 6)."""
+    __tablename__ = "payment_webhook_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    event_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(50), default="RAZORPAY", nullable=False)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    signature_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    payload_json: Mapped[Dict[str, Any]] = mapped_column(JSONType, nullable=False)
+    processed_status: Mapped[str] = mapped_column(String(50), default="PROCESSED", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+
 
 
 # ==============================================================================
