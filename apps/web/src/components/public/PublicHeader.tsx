@@ -28,11 +28,12 @@ export const PublicHeader: React.FC = () => {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'Supported Brokers', href: '#brokers' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'FAQs', href: '#faq' },
+    { label: 'Features', href: '/features' },
+    { label: 'Supported Brokers', href: '/brokers' },
+    { label: 'How It Works', href: '/how-it-works' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'FAQs', href: '/faqs' },
+    { label: 'Education', href: '/education' },
   ];
 
   return (
@@ -72,13 +73,13 @@ export const PublicHeader: React.FC = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 lg:gap-2" aria-label="Main navigation">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 className="px-3.5 py-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -125,14 +126,14 @@ export const PublicHeader: React.FC = () => {
         <div className="md:hidden border-b border-neutral-200 bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg animate-in slide-in-from-top duration-200">
           <nav className="flex flex-col space-y-1" aria-label="Mobile navigation">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2.5 text-base font-medium text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 rounded-lg transition-colors min-h-[44px] flex items-center"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <div className="pt-3 border-t border-neutral-100 flex flex-col gap-2">

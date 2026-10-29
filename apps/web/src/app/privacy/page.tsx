@@ -1,18 +1,37 @@
 import type { Metadata } from 'next';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
+import { BreadcrumbSchema } from '@/components/public/StructuredData';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://autotrader.trade';
+
 export const metadata: Metadata = {
-  title: 'Privacy Policy — NIFTY Auto Trader 3.0',
-  description: 'Data protection, credential encryption standards, and privacy policy for NIFTY Auto Trader 3.0.',
+  title: 'Privacy Policy — Data Protection & AES-256 Encryption Standards',
+  description:
+    'Data protection, zero-custody credential encryption standards, and privacy policy for NIFTY Auto Trader 3.0 users.',
+  alternates: {
+    canonical: '/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy — NIFTY Auto Trader 3.0',
+    description: 'Committed to zero plain-text credential retention and multi-tenant isolation.',
+    url: `${baseUrl}/privacy`,
+    type: 'website',
+  },
 };
 
 export default function PrivacyPage() {
+  const breadcrumbs = [
+    { name: 'Home', item: baseUrl },
+    { name: 'Privacy Policy', item: `${baseUrl}/privacy` },
+  ];
+
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans flex flex-col">
       <PublicHeader />
+      <BreadcrumbSchema items={breadcrumbs} />
 
       <main className="flex-1 py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,16 +71,16 @@ export default function PrivacyPage() {
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-base font-bold text-neutral-900">3. Telemetry and Order Auditing</h2>
+              <h2 className="text-base font-bold text-neutral-900">3. Non-Custodial Data Flow</h2>
               <p>
-                Order identifiers, fill timestamps, and execution reports are retained in your personal tenant ledger to fulfill statutory SEBI algorithmic record-keeping requirements (up to 5 years). We do not sell or monetize personal trading records.
+                Order executions flow directly from your execution worker to your broker gateway. We never sell, rent, or monetize your order history, position data, or trading strategy parameters.
               </p>
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-base font-bold text-neutral-900">4. Third-Party Broker Communication</h2>
+              <h2 className="text-base font-bold text-neutral-900">4. Data Retention & Deletion</h2>
               <p>
-                The Platform communicates strictly with your selected broker API gateway over TLS 1.3 encrypted channels. Market quote feeds and order responses are routed directly between your tenant execution context and the broker gateway.
+                You may revoke broker connection access or request full account termination at any time. Upon deletion, all associated tenant tokens, settings, and audit records are irreversibly wiped from active databases.
               </p>
             </section>
           </div>

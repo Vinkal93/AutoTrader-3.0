@@ -30,7 +30,7 @@ export const PublicFooter: React.FC = () => {
             </Link>
 
             <p className="text-xs text-neutral-400 leading-relaxed max-w-sm">
-              Non-custodial algorithmic options trading and account monitoring SaaS. Connect your personal Indian broker, configure strict risk safeguards, and execute rule-based strategies deterministically.
+              Non-custodial algorithmic options trading and account monitoring SaaS. Connect your personal Indian broker, configure strict risk safeguards, and execute rule-based strategies deterministically with zero pooled funds.
             </p>
 
             <div className="flex items-center gap-2 pt-2">
@@ -41,77 +41,75 @@ export const PublicFooter: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Columns */}
+          {/* Platform Navigation */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
               Platform
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <a href="#features" className="hover:text-white transition-colors">
+                <Link href="/features" className="hover:text-white transition-colors">
                   Features Overview
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#brokers" className="hover:text-white transition-colors">
+                <Link href="/brokers" className="hover:text-white transition-colors">
                   Supported Brokers
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#how-it-works" className="hover:text-white transition-colors">
+                <Link href="/how-it-works" className="hover:text-white transition-colors">
                   How It Works
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#pricing" className="hover:text-white transition-colors">
+                <Link href="/pricing" className="hover:text-white transition-colors">
                   Subscription Plans
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#faq" className="hover:text-white transition-colors">
-                  Frequently Asked Questions
-                </a>
+                <Link href="/faqs" className="hover:text-white transition-colors">
+                  FAQs & Answers
+                </Link>
               </li>
               <li>
-                <Link href="/dashboard" className="hover:text-white transition-colors">
-                  Institutional Cockpit
+                <Link href="/education" className="hover:text-white transition-colors">
+                  Trading Education
                 </Link>
               </li>
             </ul>
           </div>
 
+          {/* Company & Support */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
-              Supported Gateways
+              Company
             </h4>
             <ul className="space-y-2.5">
-              <li className="flex items-center justify-between">
-                <span>Kotak Neo</span>
-                <span className="text-[10px] text-emerald-400 font-mono">Supported</span>
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors">
+                  About Our Technology
+                </Link>
               </li>
-              <li className="flex items-center justify-between">
-                <span>Zerodha Kite</span>
-                <span className="text-[10px] text-blue-400 font-mono">Available</span>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  Contact Support Desk
+                </Link>
               </li>
-              <li className="flex items-center justify-between">
-                <span>Upstox Pro</span>
-                <span className="text-[10px] text-blue-400 font-mono">Available</span>
+              <li>
+                <Link href="/dashboard" className="hover:text-white transition-colors">
+                  Trader Cockpit
+                </Link>
               </li>
-              <li className="flex items-center justify-between">
-                <span>Angel One</span>
-                <span className="text-[10px] text-amber-400 font-mono">In Review</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>DhanHQ</span>
-                <span className="text-[10px] text-amber-400 font-mono">In Review</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Fyers API v3</span>
-                <span className="text-[10px] text-neutral-500 font-mono">Roadmap</span>
+              <li>
+                <Link href="/login" className="hover:text-white transition-colors">
+                  Sign In to Workspace
+                </Link>
               </li>
             </ul>
           </div>
 
+          {/* Legal & Compliance */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
               Legal & Compliance
@@ -139,11 +137,11 @@ export const PublicFooter: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="mailto:support@autotrader.local"
+                  href="mailto:support@autotrader.trade"
                   className="hover:text-white transition-colors flex items-center gap-1.5"
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  Contact Support
+                  support@autotrader.trade
                 </a>
               </li>
             </ul>
@@ -171,6 +169,8 @@ export const PublicFooter: React.FC = () => {
             <Link href="/privacy" className="hover:text-neutral-300">Privacy</Link>
             <span>·</span>
             <Link href="/risk-disclosure" className="hover:text-neutral-300">Risk Disclosure</Link>
+            <span>·</span>
+            <Link href="/refund-policy" className="hover:text-neutral-300">Refunds</Link>
           </div>
         </div>
       </div>

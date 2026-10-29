@@ -1,18 +1,37 @@
 import type { Metadata } from 'next';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
+import { BreadcrumbSchema } from '@/components/public/StructuredData';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://autotrader.trade';
+
 export const metadata: Metadata = {
-  title: 'SEBI Risk Disclosure & Derivatives Warning — NIFTY Auto Trader 3.0',
-  description: 'Statutory SEBI risk disclosure and derivatives trading risk advisory.',
+  title: 'SEBI Risk Disclosure & Derivatives Trading Warnings',
+  description:
+    'Mandatory statutory SEBI risk disclosure regarding retail derivatives trading in India, transaction costs, and algorithmic software execution risks.',
+  alternates: {
+    canonical: '/risk-disclosure',
+  },
+  openGraph: {
+    title: 'SEBI Risk Disclosure on Derivatives — NIFTY Auto Trader 3.0',
+    description: 'Mandatory statutory risk advisory for futures and options trading.',
+    url: `${baseUrl}/risk-disclosure`,
+    type: 'website',
+  },
 };
 
 export default function RiskDisclosurePage() {
+  const breadcrumbs = [
+    { name: 'Home', item: baseUrl },
+    { name: 'Risk Disclosure', item: `${baseUrl}/risk-disclosure` },
+  ];
+
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans flex flex-col">
       <PublicHeader />
+      <BreadcrumbSchema items={breadcrumbs} />
 
       <main className="flex-1 py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,23 +71,23 @@ export default function RiskDisclosurePage() {
 
           <div className="prose prose-neutral max-w-none text-sm text-neutral-700 leading-relaxed space-y-6">
             <section className="space-y-2">
-              <h2 className="text-base font-bold text-neutral-900">1. High Financial Risk of Index Options</h2>
+              <h2 className="text-base font-bold text-neutral-900">1. Nature of Derivative Products</h2>
               <p>
-                Trading in NIFTY 50 and index options involves substantial leverage. A small movement in the underlying index can result in disproportionately large profits or losses. Long option positions can expire completely worthless, resulting in 100% loss of the premium paid. Short option positions carry theoretical unlimited risk.
+                Index options and futures are leveraged derivative instruments with defined expiration dates. A small market movement can cause disproportionate gains or rapid and total loss of your invested capital. Traders must never allocate emergency funds, borrowed money, or vital capital to options trading.
               </p>
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-base font-bold text-neutral-900">2. Algorithmic Execution and Technology Risks</h2>
+              <h2 className="text-base font-bold text-neutral-900">2. Algorithmic Software Limitations & Execution Risks</h2>
               <p>
-                Algorithmic trading systems depend heavily on internet connectivity, exchange server latency, broker API availability, and accurate tick streaming. In situations of extreme volatility or communication dropouts, orders may not be executed at expected prices, or stop-loss triggers may experience slippage.
+                While automated trading eliminates emotional hesitation, it introduces technical dependencies. Network packet loss, broker API rate limits, exchange downtime, sudden market illiquidity, and bid-ask spread widening during economic announcements can lead to slippage beyond configured stop-loss levels.
               </p>
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-base font-bold text-neutral-900">3. No Assured Returns or Advisory</h2>
+              <h2 className="text-base font-bold text-neutral-900">3. Non-Advisory Status</h2>
               <p>
-                NIFTY Auto Trader 3.0 does not guarantee profitable trading outcomes, positive returns, or protection against loss. The user remains solely and fully liable for all trading decisions, capital allocations, and risk management parameters configured on the platform.
+                NIFTY Auto Trader 3.0 provides deterministic software tools. We do not provide investment advice, trading tips, or guaranteed profit assurances. Any sample strategy parameters or technical indicator rules must be evaluated by the user independently or in consultation with a certified SEBI-registered Investment Adviser (RIA).
               </p>
             </section>
           </div>

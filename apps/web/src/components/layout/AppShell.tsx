@@ -28,8 +28,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   const isPublicRoute =
     pathname === '/' ||
+    pathname.startsWith('/features') ||
+    pathname.startsWith('/brokers') ||
     pathname.startsWith('/pricing') ||
     pathname.startsWith('/how-it-works') ||
+    pathname.startsWith('/faqs') ||
+    pathname.startsWith('/about') ||
+    pathname.startsWith('/contact') ||
+    pathname.startsWith('/education') ||
     pathname.startsWith('/terms') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/risk-disclosure') ||

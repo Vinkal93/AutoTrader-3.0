@@ -1,18 +1,37 @@
 import type { Metadata } from 'next';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
+import { BreadcrumbSchema } from '@/components/public/StructuredData';
 import Link from 'next/link';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://autotrader.trade';
+
 export const metadata: Metadata = {
-  title: 'Terms of Use — NIFTY Auto Trader 3.0',
-  description: 'Terms of service and software licensing conditions governing the use of NIFTY Auto Trader 3.0 platform.',
+  title: 'Terms of Use — Software Licensing & Operational Agreement',
+  description:
+    'Terms of service, non-custodial software licensing conditions, and operational requirements governing the use of NIFTY Auto Trader 3.0 platform.',
+  alternates: {
+    canonical: '/terms',
+  },
+  openGraph: {
+    title: 'Terms of Use — NIFTY Auto Trader 3.0',
+    description: 'Terms of service and software licensing conditions governing platform operations.',
+    url: `${baseUrl}/terms`,
+    type: 'website',
+  },
 };
 
 export default function TermsPage() {
+  const breadcrumbs = [
+    { name: 'Home', item: baseUrl },
+    { name: 'Terms of Use', item: `${baseUrl}/terms` },
+  ];
+
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans flex flex-col">
       <PublicHeader />
+      <BreadcrumbSchema items={breadcrumbs} />
 
       <main className="flex-1 py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
