@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 export type StatusType =
   | 'connected'
   | 'disconnected'
+  | 'not_connected'
   | 'error'
   | 'loading'
   | 'degraded'
@@ -12,7 +13,13 @@ export type StatusType =
   | 'running'
   | 'paused'
   | 'stopped'
-  | 'risk_locked';
+  | 'risk_locked'
+  | 'stale'
+  | 'unsupported'
+  | 'access_pending'
+  | 'partial_result'
+  | 'success'
+  | 'disabled';
 
 export interface StatusIndicatorProps {
   status: StatusType | string;
@@ -25,6 +32,12 @@ export interface StatusIndicatorProps {
 
 const statusColorMap: Record<string, { dot: string; bg: string; text: string; border: string }> = {
   connected: {
+    dot: 'bg-emerald-500',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+  },
+  success: {
     dot: 'bg-emerald-500',
     bg: 'bg-emerald-50',
     text: 'text-emerald-700',
@@ -48,6 +61,12 @@ const statusColorMap: Record<string, { dot: string; bg: string; text: string; bo
     text: 'text-blue-700',
     border: 'border-blue-200',
   },
+  partial_result: {
+    dot: 'bg-blue-400',
+    bg: 'bg-blue-50/70',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
+  },
   warning: {
     dot: 'bg-amber-500',
     bg: 'bg-amber-50',
@@ -66,7 +85,37 @@ const statusColorMap: Record<string, { dot: string; bg: string; text: string; bo
     text: 'text-amber-800',
     border: 'border-amber-200',
   },
+  stale: {
+    dot: 'bg-amber-500',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    border: 'border-amber-200',
+  },
+  access_pending: {
+    dot: 'bg-amber-500',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    border: 'border-amber-200',
+  },
+  unsupported: {
+    dot: 'bg-neutral-400',
+    bg: 'bg-neutral-100',
+    text: 'text-neutral-600',
+    border: 'border-neutral-200',
+  },
+  disabled: {
+    dot: 'bg-neutral-400',
+    bg: 'bg-neutral-100',
+    text: 'text-neutral-500',
+    border: 'border-neutral-200',
+  },
   disconnected: {
+    dot: 'bg-neutral-400',
+    bg: 'bg-neutral-100',
+    text: 'text-neutral-600',
+    border: 'border-neutral-200',
+  },
+  not_connected: {
     dot: 'bg-neutral-400',
     bg: 'bg-neutral-100',
     text: 'text-neutral-600',

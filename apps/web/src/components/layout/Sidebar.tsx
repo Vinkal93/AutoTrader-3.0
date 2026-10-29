@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -13,11 +13,24 @@ import {
   Lock,
   ExternalLink,
   ShieldAlert,
+  X,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
+
+  // Close mobile drawer on Escape key for accessibility (WCAG 2.1)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && mobileSidebarOpen) {
+        setMobileSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileSidebarOpen, setMobileSidebarOpen]);
 
   const renderBadge = (item: RouteItem) => {
     if (!item.badge) return null;
@@ -45,7 +58,7 @@ export const Sidebar: React.FC = () => {
       {/* Mobile Backdrop */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-neutral-900/40 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={() => setMobileSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -53,10 +66,11 @@ export const Sidebar: React.FC = () => {
 
       {/* Main Sidebar */}
       <aside
+        aria-label="Application Sidebar"
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex flex-col bg-white text-neutral-800 transition-all duration-300 ease-in-out border-r border-neutral-200 shadow-xs',
           // Mobile state: slide in/out
-          mobileSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0',
+          mobileSidebarOpen ? 'translate-x-0 w-72 sm:w-64' : '-translate-x-full lg:translate-x-0',
           // Desktop state: collapsed vs expanded
           sidebarCollapsed ? 'lg:w-18' : 'lg:w-64'
         )}
@@ -66,7 +80,7 @@ export const Sidebar: React.FC = () => {
           <Link
             href="/dashboard"
             onClick={() => setMobileSidebarOpen(false)}
-            className="flex items-center gap-3 overflow-hidden"
+            className="flex items-center gap-3 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg p-1"
           >
             <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/20">
               <TrendingUp className="w-5 h-5 text-white" />
@@ -82,13 +96,25 @@ export const Sidebar: React.FC = () => {
               </div>
             )}
           </Link>
+
+          {/* Desktop Collapse/Expand Toggle */}
           <button
             type="button"
             onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+            className="hidden lg:flex p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+
+          {/* Mobile Close Button (Touch target >= 44px) */}
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Close navigation menu"
+            className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -105,7 +131,7 @@ export const Sidebar: React.FC = () => {
                 onClick={() => setMobileSidebarOpen(false)}
                 title={sidebarCollapsed && !mobileSidebarOpen ? item.label : undefined}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative',
+                  'flex items-center gap-3 px-3 py-3 sm:py-2.5 rounded-xl text-sm font-medium transition-all group relative min-h-[44px] sm:min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600',
                   isActive
                     ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs'
                     : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900',
@@ -138,19 +164,20 @@ export const Sidebar: React.FC = () => {
           })}
         </nav>
 
-        {/* Phase Indicator Footer Card */}
+        {/* Risk & Safety Disclosures Footer (Never hidden on mobile) */}
         {(!sidebarCollapsed || mobileSidebarOpen) && (
-          <div className="p-3 border-t border-neutral-100 bg-neutral-50/50 m-3 rounded-xl border">
-            <div className="flex items-center justify-between text-xs text-neutral-500 font-medium mb-1">
-              <span className="text-[10px] font-semibold text-neutral-600 uppercase tracking-wider">
-                Phase 2
+          <div className="p-3 border-t border-neutral-100 bg-neutral-50/70 m-3 rounded-xl border space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-neutral-500 font-medium">
+              <span className="text-[10px] font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-amber-500" />
+                Risk Disclosure
               </span>
               <span className="text-[10px] bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.5 rounded">
-                Telemetry Active
+                Protected
               </span>
             </div>
             <p className="text-[11px] text-neutral-500 leading-tight">
-              Read-only verified broker telemetry & risk monitoring dashboard.
+              Options trading carries substantial risk of loss. SEBI-compliant execution safety lock active.
             </p>
           </div>
         )}
