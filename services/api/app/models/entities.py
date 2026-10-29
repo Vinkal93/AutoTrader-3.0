@@ -281,6 +281,7 @@ class Strategy(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
     user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    broker_connection_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("broker_connections.id", ondelete="SET NULL"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -290,6 +291,7 @@ class Strategy(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=False)
 
     user: Mapped[Optional["User"]] = relationship("User", back_populates="strategies")
+    broker_connection: Mapped[Optional["BrokerConnection"]] = relationship("BrokerConnection")
     versions: Mapped[List["StrategyVersion"]] = relationship("StrategyVersion", back_populates="strategy", cascade="all, delete-orphan")
     runs: Mapped[List["StrategyRun"]] = relationship("StrategyRun", back_populates="strategy", cascade="all, delete-orphan")
     assignments: Mapped[List["StrategyAssignment"]] = relationship("StrategyAssignment", back_populates="strategy", cascade="all, delete-orphan")

@@ -1,6 +1,6 @@
-"""Strategy configuration, listing, update, and risk validation endpoints."""
+"""Strategy configuration, listing, update, control, and risk validation endpoints."""
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -10,8 +10,12 @@ from app.schemas.common import ApiResponse
 from app.schemas.strategy import (
     Strategy,
     StrategyConfig,
+    StrategyControlRequest,
+    StrategyControlResponse,
+    StrategyCreateRequest,
     StrategyUpdateRequest,
     StrategyValidationResult,
+    WorkerStatusResponse,
 )
 from app.schemas.strategy_engine import (
     BacktestRequest,
@@ -33,10 +37,31 @@ async def list_strategies(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[List[Strategy]]:
-    """List all registered strategies and current versions."""
+    """List all registered strategies and current versions for current user."""
     await StrategyService.seed_default_strategy_if_empty(db)
-    strats = await StrategyService.get_all_strategies(db)
+    strats = await StrategyService.get_all_strategies(db, user_id=user.user_id)
     return success_response(strats, request=request, data_source="DATABASE")
+
+
+@router.post("", response_model=ApiResponse[Strategy], status_code=status.HTTP_201_CREATED)
+async def create_strategy(
+    payload: StrategyCreateRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[Strategy]:
+    """Create a user-owned strategy configuration with immutable initial version."""
+    try:
+        strat, validation = await StrategyService.create_user_strategy(
+            user_id=user.user_id,
+            payload=payload,
+            db=db,
+            user_email=user.email,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+    return success_response(strat, request=request, data_source="DATABASE")
 
 
 @router.get("/active", response_model=ApiResponse[Strategy])
@@ -46,13 +71,79 @@ async def get_active_strategy(
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[Strategy]:
     """Get the currently active trading strategy."""
-    active_strat = await StrategyService.get_active_strategy(db)
+    active_strat = await StrategyService.get_active_strategy(db, user_id=user.user_id)
     if not active_strat:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No active strategy configured",
         )
     return success_response(active_strat, request=request, data_source="DATABASE")
+
+
+@router.get("/template/nifty", response_model=ApiResponse[Dict[str, Any]])
+async def get_nifty_template(
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[Dict[str, Any]]:
+    """Retrieve the original unvalidated NIFTY 12:20 PM strategy template."""
+    template = StrategyService.get_nifty_template()
+    return success_response(template, request=request, data_source="CONFIGURATION")
+
+
+@router.get("/worker/status", response_model=ApiResponse[WorkerStatusResponse])
+async def get_worker_status(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[WorkerStatusResponse]:
+    """Retrieve autonomous trading worker engine health, state, and calendar telemetry."""
+    status_data = await StrategyEngineService.get_worker_status(db=db)
+    return success_response(status_data, request=request, data_source="ENGINE")
+
+
+@router.post("/scheduler/tick", response_model=ApiResponse[Dict[str, Any]])
+async def execute_scheduler_tick(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[Dict[str, Any]]:
+    """Execute scheduled strategy pass for all active strategies."""
+    tick_result = await StrategyEngineService.execute_scheduler_tick(db=db)
+    return success_response(tick_result, request=request, data_source="ENGINE")
+
+
+@router.post("/backtest", response_model=ApiResponse[BacktestResult])
+async def run_strategy_backtest(
+    payload: BacktestRequest,
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[BacktestResult]:
+    """Run chronological backtesting simulation on completed candles with zero lookahead."""
+    result = await StrategyEngineService.run_backtest_simulation(payload)
+    return success_response(result, request=request, data_source="SIMULATED")
+
+
+@router.post("/{strategy_id}/control", response_model=ApiResponse[StrategyControlResponse])
+async def control_strategy(
+    strategy_id: str,
+    payload: StrategyControlRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[StrategyControlResponse]:
+    """Execute strategy control action (PAUSE, RESUME, DISABLE_ENTRIES, EMERGENCY_HALT)."""
+    try:
+        resp = await StrategyService.handle_strategy_control(
+            strategy_id=strategy_id,
+            action=payload.action,
+            reason=payload.reason,
+            user_id=user.user_id,
+            db=db,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+    return success_response(resp, request=request, data_source="DATABASE")
 
 
 @router.put("/{strategy_id}", response_model=ApiResponse[Strategy])
@@ -100,17 +191,6 @@ async def validate_strategy(
     return success_response(validation, request=request, data_source="DATABASE")
 
 
-@router.post("/backtest", response_model=ApiResponse[BacktestResult])
-async def run_strategy_backtest(
-    payload: BacktestRequest,
-    request: Request,
-    user: CurrentUser = Depends(get_current_user),
-) -> ApiResponse[BacktestResult]:
-    """Run chronological backtesting simulation on completed candles with zero lookahead."""
-    result = await StrategyEngineService.run_backtest_simulation(payload)
-    return success_response(result, request=request, data_source="SIMULATED")
-
-
 @router.get("/{strategy_id}/versions", response_model=ApiResponse[List[StrategyVersionRecord]])
 async def get_strategy_versions(
     strategy_id: str,
@@ -144,10 +224,6 @@ async def get_strategy_schedule(
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[StrategyScheduleStatus]:
     """Retrieve market calendar schedule and next run status."""
-    strat = await StrategyService.get_active_strategy(db)
-    if not strat:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Strategy not found")
-
     from app.models.entities import Strategy as StrategyEntity
     res = await db.execute(select(StrategyEntity).where(StrategyEntity.id == strategy_id).limit(1))
     strat_entity = res.scalars().first()
@@ -173,7 +249,7 @@ async def evaluate_strategy(
     if not strat_entity:
         strat_entity = await StrategyService.seed_default_strategy_if_empty(db)
 
-    active_strat = await StrategyService.get_active_strategy(db)
+    active_strat = await StrategyService.get_active_strategy(db, user_id=user.user_id)
     config = active_strat.config if active_strat else StrategyService.get_default_config()
 
     run_record = await StrategyEngineService.evaluate_strategy_decision(

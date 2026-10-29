@@ -366,9 +366,13 @@ export interface Strategy {
   name: string;
   description: string;
   version: number;
+  currentVersion?: number;
   isActive: boolean;
   tradingMode: TradingMode;
   config: StrategyConfig;
+  userId?: string | null;
+  connectionId?: string | null;
+  brokerAccountId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -399,6 +403,9 @@ export interface StrategyConfig {
   expirySelectionPolicy: 'CURRENT_WEEK' | 'NEXT_WEEK' | 'CURRENT_MONTH' | null;
   marketHolidayBehavior: 'SKIP' | 'ALERT' | null;
   automatedRecoveryPolicy: 'PAUSE' | 'RETRY_ONCE' | 'STOP' | null;
+  direction?: 'AUTO' | 'CE' | 'PE';
+  connectionId?: string | null;
+  brokerAccountId?: string | null;
 }
 
 export interface StrategyValidationResult {
@@ -913,6 +920,37 @@ export interface StrategyScheduleStatus {
   serverTimeIST: string;
 }
 
+export type StrategyControlAction = 'PAUSE' | 'RESUME' | 'DISABLE_ENTRIES' | 'EMERGENCY_HALT';
+
+export interface StrategyControlRequest {
+  action: StrategyControlAction;
+  reason?: string;
+}
+
+export interface StrategyControlResponse {
+  strategyId: string;
+  status: string;
+  isActive: boolean;
+  tradingMode: TradingMode;
+  actionApplied: StrategyControlAction;
+  appliedAt: string;
+  message: string;
+}
+
+export interface WorkerStatusResponse {
+  workerId: string;
+  isLeader: boolean;
+  engineState: EngineState;
+  tradingMode: TradingMode;
+  uptimeSeconds: number;
+  lastHeartbeat: string;
+  activeStrategiesCount: number;
+  scheduledEvaluationsCount: number;
+  isMarketOpen: boolean;
+  isHoliday: boolean;
+  holidayName?: string | null;
+}
+
 export interface BacktestSignalLog {
   date: string;
   timeIST: string;
@@ -1157,6 +1195,10 @@ export const API_ROUTES = {
   strategies: '/api/v1/strategies',
   activeStrategy: '/api/v1/strategies/active',
   strategyBacktest: '/api/v1/strategies/backtest',
+  strategiesControl: '/api/v1/strategies/:id/control',
+  strategiesTemplateNifty: '/api/v1/strategies/template/nifty',
+  strategiesWorkerStatus: '/api/v1/strategies/worker/status',
+  strategiesSchedulerTick: '/api/v1/strategies/scheduler/tick',
   dashboardOverview: '/api/v1/dashboard/overview',
   analyticsPerformance: '/api/v1/analytics/performance',
   analyticsComprehensive: '/api/v1/analytics/comprehensive',
@@ -1318,12 +1360,17 @@ export interface BrokerConnectionSummary {
   connectedAt: string | null;
   sessionExpiresAt: string | null;
   lastSyncedAt: string | null;
+  lastSyncAt?: string | null;
   marketFeedStatus: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
   orderFeedStatus: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
   reportApiStatus: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
   staticIpCompliant: boolean | null;
   egressIpVerified?: string | null;
   lastError: string | null;
+  isPartnerApproved?: boolean;
+  canExecuteOrders?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   permissions?: BrokerPermissions;
 }
 

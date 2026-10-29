@@ -33,6 +33,10 @@ import {
   type BacktestRequest,
   type BacktestResult,
   type StrategyConfig,
+  type StrategyControlAction,
+  type StrategyControlRequest,
+  type StrategyControlResponse,
+  type WorkerStatusResponse,
   type OrderSubmissionRequest,
   type OrderSubmissionResult,
   type OrderCancelRequest,
@@ -99,6 +103,8 @@ export const queryKeys = {
   strategyVersions: (id: string) => ['strategyVersions', id] as const,
   strategyRuns: (id: string) => ['strategyRuns', id] as const,
   strategySchedule: (id: string) => ['strategySchedule', id] as const,
+  workerStatus: ['workerStatus'] as const,
+  niftyStrategyTemplate: ['niftyStrategyTemplate'] as const,
   dashboardOverview: ['dashboardOverview'] as const,
   systemEvents: ['systemEvents'] as const,
   failureModes: ['failureModes'] as const,
@@ -611,6 +617,63 @@ export function useBacktestStrategy() {
     mutationFn: async (payload: BacktestRequest) => {
       const res = await api.post<BacktestResult>(API_ROUTES.strategyBacktest, payload);
       return res.data;
+    },
+  });
+}
+
+export function useWorkerStatus(refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.workerStatus,
+    queryFn: async () => {
+      const res = await api.get<WorkerStatusResponse>('/api/v1/strategies/worker/status');
+      return res.data;
+    },
+    refetchInterval,
+  });
+}
+
+export function useNiftyStrategyTemplate() {
+  return useQuery({
+    queryKey: queryKeys.niftyStrategyTemplate,
+    queryFn: async () => {
+      const res = await api.get<{
+        name: string;
+        description: string;
+        tradingMode: TradingMode;
+        disclaimer: string;
+        config: StrategyConfig;
+      }>('/api/v1/strategies/template/nifty');
+      return res.data;
+    },
+    staleTime: Infinity,
+  });
+}
+
+export function useStrategyControl() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      strategyId,
+      action,
+      reason,
+    }: {
+      strategyId: string;
+      action: StrategyControlAction;
+      reason?: string;
+    }) => {
+      const res = await api.post<StrategyControlResponse>(
+        `/api/v1/strategies/${strategyId}/control`,
+        { action, reason }
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.activeStrategy });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategies });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategyRuns(data.strategyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.strategySchedule(data.strategyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardOverview });
+      queryClient.invalidateQueries({ queryKey: queryKeys.workerStatus });
     },
   });
 }

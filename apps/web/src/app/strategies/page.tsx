@@ -11,8 +11,12 @@ import {
   useUpdateStrategy,
   useEvaluateStrategy,
   useBacktestStrategy,
+  useBrokerConnections,
+  useStrategyControl,
+  useWorkerStatus,
+  useNiftyStrategyTemplate,
 } from '@/hooks/use-queries';
-import { StrategyConfig, TradingMode } from '@autotrader/api-contracts';
+import { StrategyConfig, TradingMode, StrategyControlAction } from '@autotrader/api-contracts';
 import { formatCurrency, formatISTDateTime } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import {
@@ -21,6 +25,7 @@ import {
   Clock,
   History,
   Play,
+  Pause,
   RotateCcw,
   Save,
   CheckCircle2,
@@ -32,8 +37,13 @@ import {
   TrendingDown,
   Info,
   ShieldAlert,
+  ShieldCheck,
+  AlertOctagon,
   BarChart2,
   HelpCircle,
+  Activity,
+  Cpu,
+  FileCheck,
 } from 'lucide-react';
 
 export default function StrategyEnginePage() {
@@ -43,14 +53,25 @@ export default function StrategyEnginePage() {
   const { data: schedule } = useStrategySchedule(strategyId);
   const { data: versions } = useStrategyVersions(strategyId);
   const { data: runs } = useStrategyRuns(strategyId);
+  const { data: brokerConnections } = useBrokerConnections();
+  const { data: workerStatus } = useWorkerStatus();
+  const { data: niftyTemplate } = useNiftyStrategyTemplate();
 
   const updateStrategy = useUpdateStrategy();
   const evaluateStrategy = useEvaluateStrategy();
   const backtestStrategy = useBacktestStrategy();
+  const strategyControl = useStrategyControl();
 
   const [activeTab, setActiveTab] = useState<'CONFIG' | 'SCHEDULE' | 'VERSIONS' | 'RUNS' | 'BACKTEST'>('CONFIG');
 
-  // Form states initialized with active config
+  // Strategy metadata & broker binding
+  const [strategyName, setStrategyName] = useState('NIFTY 12:20 Rule-Based Directional Buyer');
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
+  const [direction, setDirection] = useState<'AUTO' | 'CE' | 'PE'>('AUTO');
+  const [candleInterval, setCandleInterval] = useState('5m');
+  const [expiryPolicy, setExpiryPolicy] = useState<'CURRENT_WEEK' | 'NEXT_WEEK' | 'CURRENT_MONTH'>('CURRENT_WEEK');
+
+  // Core parameters
   const [entryTimeIST, setEntryTimeIST] = useState('12:20');
   const [premiumMin, setPremiumMin] = useState('40.00');
   const [premiumMax, setPremiumMax] = useState('45.00');
@@ -63,9 +84,9 @@ export default function StrategyEnginePage() {
   const [minLiquidity, setMinLiquidity] = useState<number>(50);
 
   // Risk limits
-  const [maxRiskPerTrade, setMaxRiskPerTrade] = useState('');
-  const [maxDailyLoss, setMaxDailyLoss] = useState('');
-  const [minTradingFunds, setMinTradingFunds] = useState('');
+  const [maxRiskPerTrade, setMaxRiskPerTrade] = useState('1500.00');
+  const [maxDailyLoss, setMaxDailyLoss] = useState('3000.00');
+  const [minTradingFunds, setMinTradingFunds] = useState('10000.00');
   const [timeBasedExitIST, setTimeBasedExitIST] = useState('15:15');
 
   // Modal / Feedback state
@@ -73,11 +94,65 @@ export default function StrategyEnginePage() {
   const [changeReason, setChangeReason] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [evalResult, setEvalResult] = useState<any>(null);
+  const [controlFeedback, setControlFeedback] = useState<string | null>(null);
+  const [showTemplateDisclaimer, setShowTemplateDisclaimer] = useState(false);
 
   // Sync form when strategy data loads
   useEffect(() => {
-    if (strategy?.config) {
-      const cfg = strategy.config;
+    if (strategy) {
+      setStrategyName(strategy.name || 'NIFTY 12:20 Rule-Based Directional Buyer');
+      if (strategy.connectionId) {
+        setSelectedConnectionId(strategy.connectionId);
+      }
+      if (strategy.config) {
+        const cfg = strategy.config;
+        setDirection(cfg.direction || 'AUTO');
+        setCandleInterval(cfg.candleInterval || '5m');
+        setExpiryPolicy(cfg.expirySelectionPolicy || 'CURRENT_WEEK');
+        setEntryTimeIST(cfg.entryTimeIST || '12:20');
+        setPremiumMin(cfg.premiumMin || '40.00');
+        setPremiumMax(cfg.premiumMax || '45.00');
+        setTargetMove(cfg.targetPremiumMove || '1.00');
+        setInitialSL(cfg.initialStopLoss || '3.00');
+        setLotCount(cfg.lotCount || 1);
+        setMaxTradesPerDay(cfg.maxTradesPerDay || 1);
+        setSidewaysAction(cfg.sidewaysAction || 'SKIP');
+        setMaxSpread(cfg.maxBidAskSpread || '1.50');
+        setMinLiquidity(cfg.minLiquidity || 50);
+        setMaxRiskPerTrade(cfg.maxRiskPerTrade || '1500.00');
+        setMaxDailyLoss(cfg.maxDailyLoss || '3000.00');
+        setMinTradingFunds(cfg.minTradingFunds || '10000.00');
+        setTimeBasedExitIST(cfg.timeBasedExitIST || '15:15');
+      }
+    }
+  }, [strategy]);
+
+  // Set default connection if none selected
+  useEffect(() => {
+    if (!selectedConnectionId && brokerConnections && brokerConnections.length > 0) {
+      setSelectedConnectionId(brokerConnections[0].id);
+    }
+  }, [brokerConnections, selectedConnectionId]);
+
+  const handleControlAction = async (action: StrategyControlAction) => {
+    if (!strategyId) return;
+    try {
+      const res = await strategyControl.mutateAsync({
+        strategyId,
+        action,
+        reason: `Operator control action: ${action}`,
+      });
+      setControlFeedback(res.message);
+      setTimeout(() => setControlFeedback(null), 5000);
+    } catch (err: any) {
+      setControlFeedback(`Action failed: ${err.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleLoadNiftyTemplate = () => {
+    if (niftyTemplate?.config) {
+      const cfg = niftyTemplate.config;
+      setStrategyName(niftyTemplate.name);
       setEntryTimeIST(cfg.entryTimeIST || '12:20');
       setPremiumMin(cfg.premiumMin || '40.00');
       setPremiumMax(cfg.premiumMax || '45.00');
@@ -85,15 +160,16 @@ export default function StrategyEnginePage() {
       setInitialSL(cfg.initialStopLoss || '3.00');
       setLotCount(cfg.lotCount || 1);
       setMaxTradesPerDay(cfg.maxTradesPerDay || 1);
-      setSidewaysAction(cfg.sidewaysAction || 'SKIP');
-      setMaxSpread(cfg.maxBidAskSpread || '1.50');
-      setMinLiquidity(cfg.minLiquidity || 50);
-      setMaxRiskPerTrade(cfg.maxRiskPerTrade || '');
-      setMaxDailyLoss(cfg.maxDailyLoss || '');
-      setMinTradingFunds(cfg.minTradingFunds || '');
+      setDirection('AUTO');
+      setCandleInterval('5m');
+      setExpiryPolicy('CURRENT_WEEK');
+      setMaxRiskPerTrade(cfg.maxRiskPerTrade || '1500.00');
+      setMaxDailyLoss(cfg.maxDailyLoss || '3000.00');
+      setMinTradingFunds(cfg.minTradingFunds || '10000.00');
       setTimeBasedExitIST(cfg.timeBasedExitIST || '15:15');
+      setShowTemplateDisclaimer(true);
     }
-  }, [strategy]);
+  };
 
   const handleSaveVersion = async () => {
     if (!strategyId) return;
@@ -101,12 +177,14 @@ export default function StrategyEnginePage() {
     const newConfig: StrategyConfig = {
       underlying: 'NIFTY',
       instrumentType: 'OPTIONS',
+      direction,
+      connectionId: selectedConnectionId || null,
       entryTimeIST,
       premiumMin,
       premiumMax,
       targetPremiumMove: targetMove,
       initialStopLoss: initialSL,
-      candleInterval: '5m',
+      candleInterval,
       trendIndicators: ['EMA_9', 'EMA_21'],
       maxTradesPerDay,
       lotCount,
@@ -120,7 +198,7 @@ export default function StrategyEnginePage() {
       maxDataAgeSeconds: 60,
       maxOrderWaitSeconds: 15,
       timeBasedExitIST,
-      expirySelectionPolicy: 'CURRENT_WEEK',
+      expirySelectionPolicy: expiryPolicy,
       marketHolidayBehavior: 'SKIP',
       automatedRecoveryPolicy: 'PAUSE',
     };
@@ -166,57 +244,173 @@ export default function StrategyEnginePage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <PageHeader
-        title="Strategy Configuration & Engine"
-        subtitle="Version-controlled 12:20 PM IST directional options engine, market calendar scheduling, and backtesting"
+        title="Multi-User Automation Engine"
+        subtitle="Independently configured, isolated, calendar-aware strategy automation with deterministic EMA 9/21 rules"
         breadcrumbs={[
           { label: 'Dashboard', href: '/' },
-          { label: 'Strategy Settings' },
+          { label: 'Automation & Strategy Settings' },
         ]}
       />
 
-      {/* Top Telemetry & Schedule Header Banner */}
-      <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold text-sm">
-            v{strategy?.version ?? 1}
+      {/* Strategy Control Panel & Worker Health Banner */}
+      <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold text-sm">
+              v{strategy?.version ?? 1}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base text-neutral-900 tracking-tight">
+                  {strategy?.name ?? 'NIFTY 12:20 Rule-Based Directional Buyer'}
+                </h3>
+                <span
+                  className={cn(
+                    'text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border uppercase',
+                    strategy?.isActive
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  )}
+                >
+                  {strategy?.isActive ? 'Active Engine' : 'Paused Engine'}
+                </span>
+                <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase">
+                  Mode: {strategy?.tradingMode ?? 'PAPER'}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Scheduled entry at {entryTimeIST} IST • Direction: <strong className="text-neutral-700">{direction}</strong> • Max 1 trade/day
+              </p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base text-neutral-900 tracking-tight">
-                {strategy?.name ?? 'NIFTY 12:20 Rule-Based Directional Buyer'}
-              </h3>
-              <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase">
-                Active Strategy
+
+          {/* Control Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {strategy?.isActive ? (
+              <button
+                type="button"
+                onClick={() => handleControlAction('PAUSE')}
+                disabled={strategyControl.isPending}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Pause className="w-3.5 h-3.5" /> Pause Strategy
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleControlAction('RESUME')}
+                disabled={strategyControl.isPending}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Play className="w-3.5 h-3.5" /> Resume Strategy
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => handleControlAction('DISABLE_ENTRIES')}
+              disabled={strategyControl.isPending}
+              className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50 border border-neutral-300"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" /> Disable Entries
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleControlAction('EMERGENCY_HALT')}
+              disabled={strategyControl.isPending}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <AlertOctagon className="w-3.5 h-3.5" /> Emergency Halt
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTriggerEvaluation}
+              disabled={evaluateStrategy.isPending}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Play className="w-3.5 h-3.5" /> Run Evaluation Now
+            </button>
+          </div>
+        </div>
+
+        {/* Telemetry Bar: Worker Health, Next Schedule, Risk State */}
+        <div className="pt-3 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="flex items-center gap-2 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200">
+            <Cpu className="w-4 h-4 text-blue-600 shrink-0" />
+            <div>
+              <span className="text-neutral-500 font-medium block text-[10px]">Worker Health & Leader</span>
+              <span className="font-bold text-neutral-800">
+                {workerStatus?.workerId ?? 'Primary Worker'} ({workerStatus?.isLeader ? 'Leader Active' : 'Standby'})
               </span>
             </div>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Scheduled entry at {entryTimeIST} IST on trading days • Max 1 trade/day
+          </div>
+
+          <div className="flex items-center gap-2 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200">
+            <Clock className="w-4 h-4 text-neutral-500 shrink-0" />
+            <div>
+              <span className="text-neutral-500 font-medium block text-[10px]">Next Scheduled Evaluation</span>
+              <span className="font-bold text-neutral-800 tabular-nums">
+                {schedule?.nextRunIST ?? 'Today 12:20 IST'}
+                {schedule && schedule.timeRemainingSeconds > 0 && (
+                  <span className="text-blue-600 ml-1">
+                    ({Math.floor(schedule.timeRemainingSeconds / 3600)}h {Math.floor((schedule.timeRemainingSeconds % 3600) / 60)}m)
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200">
+            <Activity className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>
+              <span className="text-neutral-500 font-medium block text-[10px]">Market Hours & Calendar</span>
+              <span className="font-bold text-neutral-800">
+                {schedule?.isMarketOpen ? 'OPEN (09:15-15:30 IST)' : 'CLOSED (Market Inactive)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+            <div>
+              <span className="text-neutral-500 font-medium block text-[10px]">Daily Risk Allowance</span>
+              <span className="font-bold text-neutral-800 tabular-nums">
+                Max ₹{maxDailyLoss || '3000.00'} • 0 / {maxTradesPerDay} Trades
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Feedback Alert */}
+        {controlFeedback && (
+          <div className="p-3 bg-neutral-900 text-white rounded-xl text-xs font-medium flex items-center justify-between">
+            <span>{controlFeedback}</span>
+            <button
+              type="button"
+              onClick={() => setControlFeedback(null)}
+              className="text-neutral-400 hover:text-white text-xs ml-3"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Template Disclaimer Banner */}
+      {showTemplateDisclaimer && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold text-sm block">Original NIFTY 12:20 Strategy Template Loaded</span>
+            <p className="text-amber-800">
+              Disclaimer: Unvalidated strategy parameters, not proven profitable settings. User is solely responsible for
+              backtesting, verifying broker account connectivity, and evaluating capital risk before automated execution.
             </p>
           </div>
         </div>
-
-        {/* Schedule & Countdown Pill */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs tabular-nums font-medium">
-            <Clock className="w-3.5 h-3.5 text-neutral-500" />
-            <span>Next Run: <strong>{schedule?.nextRunIST ?? 'Today 12:20:00 IST'}</strong></span>
-            {schedule && schedule.timeRemainingSeconds > 0 && (
-              <span className="text-blue-600 font-bold">
-                ({Math.floor(schedule.timeRemainingSeconds / 3600)}h {Math.floor((schedule.timeRemainingSeconds % 3600) / 60)}m)
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleTriggerEvaluation}
-            disabled={evaluateStrategy.isPending}
-            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
-          >
-            <Play className="w-3.5 h-3.5" /> Run Evaluation Now
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Evaluation Result Flash Banner */}
       {evalResult && (
@@ -308,6 +502,26 @@ export default function StrategyEnginePage() {
       {/* TAB 1: CONFIGURATION & PARAMETERS */}
       {activeTab === 'CONFIG' && (
         <div className="space-y-6">
+          {/* Quick Template Loader */}
+          <div className="flex items-center justify-between p-4 bg-blue-50/70 border border-blue-200/80 rounded-2xl">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              <div>
+                <h4 className="font-bold text-xs text-blue-950">Original NIFTY 12:20 PM Strategy Template</h4>
+                <p className="text-[11px] text-blue-800">
+                  Pre-populates 12:20 IST entry, EMA 9/21 cross, ₹40-₹45 ask range, +₹1 target, -₹3 stop-loss.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLoadNiftyTemplate}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Load NIFTY Template
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* CARD 1: Core Strategy Rules */}
             <div className="bg-white rounded-2xl border border-neutral-200/90 p-5 shadow-xs space-y-4">
@@ -318,13 +532,45 @@ export default function StrategyEnginePage() {
 
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="text-neutral-600 font-medium block">Underlying & Instrument</label>
+                  <label className="text-neutral-600 font-medium block">Strategy Name</label>
                   <input
                     type="text"
-                    disabled
-                    value="NIFTY 50 (Options)"
-                    className="mt-1 w-full p-2 bg-neutral-100 border border-neutral-200 rounded-xl tabular-nums text-neutral-700 cursor-not-allowed"
+                    value={strategyName}
+                    onChange={(e) => setStrategyName(e.target.value)}
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-1 focus:ring-blue-500 font-medium"
                   />
+                </div>
+
+                <div>
+                  <label className="text-neutral-600 font-medium block">Bound Broker Trading Account</label>
+                  <select
+                    value={selectedConnectionId}
+                    onChange={(e) => setSelectedConnectionId(e.target.value)}
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                  >
+                    {!brokerConnections || brokerConnections.length === 0 ? (
+                      <option value="">No connected broker accounts</option>
+                    ) : (
+                      brokerConnections.map((conn) => (
+                        <option key={conn.id} value={conn.id}>
+                          {conn.brokerName || conn.providerId} ({conn.accountId || 'ID: ' + conn.id.slice(0, 8)}) - {conn.state}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-neutral-600 font-medium block">Trade Direction Rule</label>
+                  <select
+                    value={direction}
+                    onChange={(e) => setDirection(e.target.value as any)}
+                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="AUTO">AUTO (Trend Cross EMA 9/21 - Both CE & PE)</option>
+                    <option value="CE">CE ONLY (Bullish Breakout Buyer Only)</option>
+                    <option value="PE">PE ONLY (Bearish Breakdown Buyer Only)</option>
+                  </select>
                 </div>
 
                 <div>
@@ -341,21 +587,26 @@ export default function StrategyEnginePage() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-neutral-600 font-medium block">Candle Interval</label>
-                    <input
-                      type="text"
-                      disabled
-                      value="5m (Canonical)"
-                      className="mt-1 w-full p-2 bg-neutral-100 border border-neutral-200 rounded-xl tabular-nums text-neutral-700 cursor-not-allowed"
-                    />
+                    <select
+                      value={candleInterval}
+                      onChange={(e) => setCandleInterval(e.target.value)}
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="5m">5m (Canonical)</option>
+                      <option value="15m">15m</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="text-neutral-600 font-medium block">Max Trades / Day</label>
-                    <input
-                      type="number"
-                      value={maxTradesPerDay}
-                      onChange={(e) => setMaxTradesPerDay(Number(e.target.value))}
-                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
-                    />
+                    <label className="text-neutral-600 font-medium block">Expiry Policy</label>
+                    <select
+                      value={expiryPolicy}
+                      onChange={(e) => setExpiryPolicy(e.target.value as any)}
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="CURRENT_WEEK">Current Week</option>
+                      <option value="NEXT_WEEK">Next Week</option>
+                      <option value="CURRENT_MONTH">Current Month</option>
+                    </select>
                   </div>
                 </div>
 
@@ -457,15 +708,26 @@ export default function StrategyEnginePage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-neutral-600 font-medium block">Default Lot Count</label>
-                  <input
-                    type="number"
-                    value={lotCount}
-                    onChange={(e) => setLotCount(Number(e.target.value))}
-                    className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
-                  />
-                  <span className="text-[10px] text-neutral-400 mt-0.5 block">1 Lot = 25 Quantities (NIFTY)</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-neutral-600 font-medium block">Default Lot Count</label>
+                    <input
+                      type="number"
+                      value={lotCount}
+                      onChange={(e) => setLotCount(Number(e.target.value))}
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
+                    />
+                    <span className="text-[10px] text-neutral-400 mt-0.5 block">1 Lot = 25 Qty</span>
+                  </div>
+                  <div>
+                    <label className="text-neutral-600 font-medium block">Max Trades / Day</label>
+                    <input
+                      type="number"
+                      value={maxTradesPerDay}
+                      onChange={(e) => setMaxTradesPerDay(Number(e.target.value))}
+                      className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -482,7 +744,7 @@ export default function StrategyEnginePage() {
                   <label className="text-neutral-600 font-medium block">Max Risk Per Trade (₹)</label>
                   <input
                     type="text"
-                    placeholder="e.g. 500.00"
+                    placeholder="e.g. 1500.00"
                     value={maxRiskPerTrade}
                     onChange={(e) => setMaxRiskPerTrade(e.target.value)}
                     className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
@@ -493,7 +755,7 @@ export default function StrategyEnginePage() {
                   <label className="text-neutral-600 font-medium block">Max Daily Loss Limit (₹)</label>
                   <input
                     type="text"
-                    placeholder="e.g. 1500.00"
+                    placeholder="e.g. 3000.00"
                     value={maxDailyLoss}
                     onChange={(e) => setMaxDailyLoss(e.target.value)}
                     className="mt-1 w-full p-2 bg-neutral-50 border border-neutral-200 rounded-xl tabular-nums focus:ring-1 focus:ring-blue-500"
@@ -525,11 +787,13 @@ export default function StrategyEnginePage() {
             </div>
           </div>
 
-          {/* Action Bar */}
-          <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-neutral-200/90 shadow-xs">
+          {/* Action Bar & Compliance Notice */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-neutral-200/90 shadow-xs">
             <div className="flex items-center gap-2 text-xs text-neutral-500 font-sans">
               <Lock className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Saving increments strategy version and stores an immutable audit snapshot in PostgreSQL.</span>
+              <span>
+                Target and stop-loss levels are recalculated from verified broker execution fill prices. Stop-Loss Limit orders do not guarantee execution in market gaps.
+              </span>
             </div>
 
             <button
@@ -608,6 +872,7 @@ export default function StrategyEnginePage() {
                   <th className="py-2.5 px-3">Version</th>
                   <th className="py-2.5 px-3">Created At</th>
                   <th className="py-2.5 px-3">Author</th>
+                  <th className="py-2.5 px-3">Direction</th>
                   <th className="py-2.5 px-3">Ask Range</th>
                   <th className="py-2.5 px-3">Target / SL</th>
                   <th className="py-2.5 px-3">Change Reason</th>
@@ -616,7 +881,7 @@ export default function StrategyEnginePage() {
               <tbody className="divide-y divide-neutral-100 text-neutral-800">
                 {!versions || versions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 text-center text-neutral-400 text-xs">
+                    <td colSpan={7} className="py-6 text-center text-neutral-400 text-xs">
                       No version history found.
                     </td>
                   </tr>
@@ -628,6 +893,7 @@ export default function StrategyEnginePage() {
                         {formatISTDateTime(ver.createdAt)}
                       </td>
                       <td className="py-3 px-3 text-[11px]">{ver.createdBy ?? 'system'}</td>
+                      <td className="py-3 px-3 font-semibold text-neutral-700">{ver.config.direction ?? 'AUTO'}</td>
                       <td className="py-3 px-3 tabular-nums font-semibold">₹{ver.config.premiumMin} - ₹{ver.config.premiumMax}</td>
                       <td className="py-3 px-3 text-neutral-600 tabular-nums font-semibold">
                         +₹{ver.config.targetPremiumMove} / -₹{ver.config.initialStopLoss}
@@ -833,7 +1099,7 @@ export default function StrategyEnginePage() {
               </label>
               <textarea
                 rows={3}
-                placeholder="Describe your adjustments (e.g. Adjusted premium range to 40-45, set daily loss limit to 1500)..."
+                placeholder="Describe your adjustments (e.g. Bound Kotak account, set CE direction, adjusted daily loss limit)..."
                 value={changeReason}
                 onChange={(e) => setChangeReason(e.target.value)}
                 className="w-full p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-sans focus:outline-hidden focus:ring-1 focus:ring-blue-500"

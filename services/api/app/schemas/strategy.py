@@ -19,6 +19,11 @@ class StrategyConfig(CamelModel):
     lot_count: int = 1
     sideways_action: Literal["SKIP", "WAIT", "ENTER_CAUTIOUS"] = "SKIP"
 
+    # Execution direction & broker account binding
+    direction: Optional[Literal["AUTO", "CE", "PE"]] = "AUTO"
+    connection_id: Optional[str] = None
+    broker_account_id: Optional[str] = None
+
     # Risk limits — MUST be explicitly configured before LIVE trading is permitted
     max_risk_per_trade: Optional[str] = None
     max_daily_loss: Optional[str] = None
@@ -28,10 +33,10 @@ class StrategyConfig(CamelModel):
     entry_price_tolerance: Optional[str] = None
     max_data_age_seconds: Optional[int] = None
     max_order_wait_seconds: Optional[int] = None
-    time_based_exit_ist: Optional[str] = None
-    expiry_selection_policy: Optional[Literal["CURRENT_WEEK", "NEXT_WEEK", "CURRENT_MONTH"]] = None
-    market_holiday_behavior: Optional[Literal["SKIP", "ALERT"]] = None
-    automated_recovery_policy: Optional[Literal["PAUSE", "RETRY_ONCE", "STOP"]] = None
+    time_based_exit_ist: Optional[str] = "15:15"
+    expiry_selection_policy: Optional[Literal["CURRENT_WEEK", "NEXT_WEEK", "CURRENT_MONTH"]] = "CURRENT_WEEK"
+    market_holiday_behavior: Optional[Literal["SKIP", "ALERT"]] = "SKIP"
+    automated_recovery_policy: Optional[Literal["PAUSE", "RETRY_ONCE", "STOP"]] = "PAUSE"
 
 
 class Strategy(CamelModel):
@@ -39,11 +44,23 @@ class Strategy(CamelModel):
     name: str
     description: Optional[str] = None
     version: int
+    current_version: Optional[int] = None
     is_active: bool
     trading_mode: TradingMode
     config: StrategyConfig
+    user_id: Optional[str] = None
+    connection_id: Optional[str] = None
+    broker_account_id: Optional[str] = None
     created_at: str
     updated_at: str
+
+
+class StrategyCreateRequest(CamelModel):
+    name: str
+    description: Optional[str] = None
+    trading_mode: Optional[TradingMode] = TradingMode.PAPER
+    config: StrategyConfig
+    connection_id: Optional[str] = None
 
 
 class StrategyUpdateRequest(CamelModel):
@@ -53,6 +70,38 @@ class StrategyUpdateRequest(CamelModel):
     trading_mode: Optional[TradingMode] = None
     config: Optional[StrategyConfig] = None
     change_reason: Optional[str] = None
+
+
+StrategyControlAction = Literal["PAUSE", "RESUME", "DISABLE_ENTRIES", "EMERGENCY_HALT"]
+
+
+class StrategyControlRequest(CamelModel):
+    action: StrategyControlAction
+    reason: Optional[str] = None
+
+
+class StrategyControlResponse(CamelModel):
+    strategy_id: str
+    status: str
+    is_active: bool
+    trading_mode: TradingMode
+    action_applied: StrategyControlAction
+    applied_at: str
+    message: str
+
+
+class WorkerStatusResponse(CamelModel):
+    worker_id: str
+    is_leader: bool
+    engine_state: str
+    trading_mode: str
+    uptime_seconds: int
+    last_heartbeat: str
+    active_strategies_count: int
+    scheduled_evaluations_count: int
+    is_market_open: bool
+    is_holiday: bool
+    holiday_name: Optional[str] = None
 
 
 class StrategyValidationError(CamelModel):
