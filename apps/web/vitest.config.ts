@@ -14,6 +14,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@autotrader/api-contracts': path.resolve(__dirname, '../../packages/api-contracts/src/index.ts'),
       '@autotrader/ui-tokens': path.resolve(__dirname, '../../packages/ui-tokens/src/index.ts'),
+      'firebase/app': path.resolve(__dirname, '../../node_modules/firebase/app/dist/index.mjs'),
+      'firebase/analytics': path.resolve(__dirname, '../../node_modules/firebase/analytics/dist/index.mjs'),
     },
   },
 });

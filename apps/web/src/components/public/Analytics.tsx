@@ -1,10 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Script from 'next/script';
+import { getFirebaseAnalytics, firebaseConfig } from '@/lib/firebase';
 
 export const Analytics: React.FC = () => {
-  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const gaId =
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
+    firebaseConfig.measurementId ||
+    'G-NM0PXSZBVF';
+
+  useEffect(() => {
+    // SSR-Safe: Initialize Firebase Analytics strictly on client-side
+    if (typeof window !== 'undefined') {
+      getFirebaseAnalytics().catch((err) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[Firebase] Analytics client initialization skipped:', err);
+        }
+      });
+    }
+  }, []);
 
   if (!gaId) {
     return null;
