@@ -1082,7 +1082,7 @@ export default function StrategyEnginePage() {
       {/* Save Modal */}
       {saveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 max-w-md w-full shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-6 max-h-[92dvh] overflow-y-auto max-w-md w-full shadow-xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center">
                 <Save className="w-5 h-5" />

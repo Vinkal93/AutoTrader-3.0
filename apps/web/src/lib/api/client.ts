@@ -73,10 +73,23 @@ export async function apiClient<T>(
       throw err;
     }
 
-    // Network / fetch failures
+    // Network / connection refused failures
+    const isNetworkFailure =
+      err instanceof Error &&
+      (err.message.includes('fetch') ||
+        err.message.includes('NetworkError') ||
+        err.message.includes('Failed to fetch') ||
+        err.message.includes('ECONNREFUSED'));
+
+    const friendlyMessage = isNetworkFailure
+      ? 'Trading backend service is offline (http://localhost:8000). Please start the backend service or continue in preview mode.'
+      : err instanceof Error
+      ? err.message
+      : 'Network error or backend unreachable';
+
     const fallbackError: ApiError = {
       code: 'NETWORK_ERROR',
-      message: err instanceof Error ? err.message : 'Network error or backend unreachable',
+      message: friendlyMessage,
       details: { originalError: String(err) },
     };
     throw new ApiRequestError(fallbackError);
@@ -96,12 +109,6 @@ export const api = {
     apiClient<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
-    }),
-  patch: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
-    apiClient<T>(endpoint, {
-      ...options,
-      method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     }),
   delete: <T>(endpoint: string, options?: RequestInit) =>

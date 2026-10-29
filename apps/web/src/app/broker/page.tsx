@@ -416,7 +416,7 @@ export default function MultiBrokerPage() {
       {/* MODAL 1: Connect Broker Account */}
       {connectModalProvider && (
         <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl border border-neutral-200 max-w-lg w-full max-h-[92dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center font-bold text-xs text-blue-700">
@@ -586,7 +586,7 @@ export default function MultiBrokerPage() {
       {/* MODAL 2: Account Details Profile */}
       {detailsConnection && (
         <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-200 max-w-md w-full max-h-[92dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-xs">
@@ -651,7 +651,7 @@ export default function MultiBrokerPage() {
       {/* MODAL 3: Scoped Permissions & Limits */}
       {permissionsConnection && (
         <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-200 max-w-md w-full max-h-[92dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">

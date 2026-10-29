@@ -15,12 +15,13 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signupWithEmail, loginWithGoogle } = useAuth();
+  const { signupWithEmail, loginWithGoogle, loginAsDemo } = useAuth();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -67,10 +68,12 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       await signupWithEmail(email, password, fullName.trim() || undefined);
-      // New user registered: direct to onboarding flow
       router.push('/onboarding');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registration failed. Please check your details.';
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Registration failed. Please check your network connection.';
       setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
@@ -89,38 +92,64 @@ export default function SignupPage() {
     }
   };
 
+  const handleLocalPreviewLogin = () => {
+    loginAsDemo(email.trim() || 'trader@autotrader.local', fullName.trim() || 'Demo Trader');
+    router.push('/dashboard');
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-blue-100 selection:text-blue-900">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <div className="min-h-[100dvh] bg-neutral-50 flex flex-col justify-center py-4 sm:py-8 md:py-12 px-3 sm:px-6 lg:px-8 font-sans selection:bg-blue-100 selection:text-blue-900">
+      {/* Brand & Heading */}
+      <div className="w-full max-w-md mx-auto text-center px-2">
         <Link
           href="/"
           className="inline-flex items-center gap-2.5 text-neutral-900 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-xl"
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
             <TrendingUp className="w-5 h-5" />
           </div>
-          <span className="font-bold text-xl tracking-tight">
+          <span className="font-bold text-lg sm:text-xl tracking-tight">
             AutoTrader <span className="text-blue-600">3.0</span>
           </span>
         </Link>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-neutral-900">
+        <h1 className="mt-2.5 sm:mt-4 text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">
           Create Your Trader Workspace
         </h1>
-        <p className="mt-1 text-xs text-neutral-600">
+        <p className="mt-1 text-[11px] sm:text-xs text-neutral-600 max-w-xs mx-auto">
           Individual tenant isolation · Non-custodial direct-to-broker SaaS
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-sm border border-neutral-200/80 rounded-2xl">
-          {/* Error Banner */}
+      {/* Main Card Container */}
+      <div className="mt-4 sm:mt-6 w-full max-w-md mx-auto">
+        <div className="bg-white p-4 sm:p-7 md:p-8 shadow-sm border border-neutral-200/80 rounded-2xl">
+          {/* Error Banner with Graceful Offline Action */}
           {errorMessage && (
             <div
               role="alert"
-              className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 animate-in fade-in duration-150"
+              className="mb-4 p-3 sm:p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2 animate-in fade-in duration-150"
             >
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span className="leading-snug">{errorMessage}</span>
+              </div>
+              {/* If network/backend error, offer 1-click preview mode */}
+              {(errorMessage.includes('offline') ||
+                errorMessage.includes('unreachable') ||
+                errorMessage.includes('fetch') ||
+                errorMessage.includes('Network error')) && (
+                <div className="pt-1.5 border-t border-rose-200/60 flex items-center justify-between">
+                  <span className="text-[11px] text-rose-700 font-medium">Evaluating frontend?</span>
+                  <button
+                    type="button"
+                    onClick={handleLocalPreviewLogin}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] transition-colors shadow-2xs"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Enter Preview Mode →
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -148,12 +177,12 @@ export default function SignupPage() {
                   type="button"
                   onClick={handleGoogleSignup}
                   disabled={isGoogleSubmitting || isSubmitting}
-                  className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 text-sm font-semibold transition-colors shadow-2xs hover:border-neutral-300 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  className="w-full min-h-[44px] flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 active:bg-neutral-100 text-neutral-800 text-xs sm:text-sm font-semibold transition-colors shadow-2xs hover:border-neutral-300 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   {isGoogleSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin text-neutral-500" />
                   ) : (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -177,19 +206,19 @@ export default function SignupPage() {
               </div>
 
               {/* Divider */}
-              <div className="relative my-6">
+              <div className="relative my-3.5 sm:my-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-neutral-200/80" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-3 text-neutral-400 font-medium tracking-wider">
+                <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
+                  <span className="bg-white px-2.5 text-neutral-400 font-medium tracking-wider">
                     Or sign up with email
                   </span>
                 </div>
               </div>
 
               {/* METHOD 2: Email + Password */}
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="space-y-3 sm:space-y-3.5" onSubmit={handleSubmit}>
                 {/* Honeypot field for bot trapping */}
                 <input
                   type="text"
@@ -202,7 +231,7 @@ export default function SignupPage() {
                 />
 
                 <div>
-                  <label htmlFor="fullName" className="block text-xs font-semibold text-neutral-700">
+                  <label htmlFor="fullName" className="block text-[11px] sm:text-xs font-semibold text-neutral-700">
                     Trader Display Name <span className="text-neutral-400 font-normal">(Optional)</span>
                   </label>
                   <div className="mt-1 relative rounded-xl shadow-2xs">
@@ -216,13 +245,13 @@ export default function SignupPage() {
                       placeholder="e.g. Rahul Sharma"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="block w-full pl-9 pr-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
+                      className="block w-full min-h-[42px] pl-9 pr-3 py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-neutral-700">
+                  <label htmlFor="email" className="block text-[11px] sm:text-xs font-semibold text-neutral-700">
                     Email Address
                   </label>
                   <div className="mt-1 relative rounded-xl shadow-2xs">
@@ -238,13 +267,13 @@ export default function SignupPage() {
                       placeholder="trader@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-9 pr-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
+                      className="block w-full min-h-[42px] pl-9 pr-3 py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-xs font-semibold text-neutral-700">
+                  <label htmlFor="password" className="block text-[11px] sm:text-xs font-semibold text-neutral-700">
                     Password <span className="text-neutral-400 font-normal">(Min. 8 characters)</span>
                   </label>
                   <div className="mt-1 relative rounded-xl shadow-2xs">
@@ -260,13 +289,13 @@ export default function SignupPage() {
                       placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-9 pr-10 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
+                      className="block w-full min-h-[42px] pl-9 pr-10 py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600 min-h-[42px] min-w-[36px] justify-center"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -274,7 +303,7 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-xs font-semibold text-neutral-700">
+                  <label htmlFor="confirmPassword" className="block text-[11px] sm:text-xs font-semibold text-neutral-700">
                     Confirm Password
                   </label>
                   <div className="mt-1 relative rounded-xl shadow-2xs">
@@ -290,39 +319,39 @@ export default function SignupPage() {
                       placeholder="••••••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="block w-full pl-9 pr-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
+                      className="block w-full min-h-[42px] pl-9 pr-3 py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
                     />
                   </div>
                 </div>
 
-                {/* Terms Agreement Checkbox */}
-                <div className="pt-2 flex items-start gap-2.5">
+                {/* Terms Agreement Checkbox - Touch-Friendly Box */}
+                <div className="p-2 sm:p-2.5 rounded-xl bg-neutral-50 border border-neutral-150 flex items-start gap-2.5">
                   <input
                     id="agreeTerms"
                     name="agreeTerms"
                     type="checkbox"
                     checked={agreeTerms}
                     onChange={(e) => setAgreeTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-neutral-300 rounded"
+                    className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-neutral-300 rounded shrink-0 cursor-pointer"
                   />
-                  <label htmlFor="agreeTerms" className="text-xs text-neutral-600 leading-snug">
+                  <label htmlFor="agreeTerms" className="text-[11px] sm:text-xs text-neutral-600 leading-snug cursor-pointer select-none">
                     I agree to the{' '}
-                    <Link href="/terms" className="text-blue-600 hover:underline">
+                    <Link href="/terms" className="text-blue-600 font-medium hover:underline">
                       Terms of Use
                     </Link>{' '}
                     and acknowledge the{' '}
-                    <Link href="/risk-disclosure" className="text-blue-600 hover:underline">
+                    <Link href="/risk-disclosure" className="text-blue-600 font-medium hover:underline">
                       SEBI Risk Disclosure
                     </Link>
                     .
                   </label>
                 </div>
 
-                <div className="pt-3">
+                <div className="pt-1.5 sm:pt-2">
                   <button
                     type="submit"
                     disabled={isSubmitting || isGoogleSubmitting}
-                    className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-sm transition-colors disabled:opacity-50"
+                    className="w-full min-h-[44px] flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-sm transition-colors disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
@@ -341,7 +370,7 @@ export default function SignupPage() {
             </>
           )}
 
-          <div className="mt-6 pt-4 border-t border-neutral-100 flex items-start gap-2 text-[11px] text-neutral-500">
+          <div className="mt-4 pt-3.5 border-t border-neutral-100 flex items-start gap-2 text-[10px] sm:text-[11px] text-neutral-500">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <span>
               <strong>Non-Custodial Account:</strong> We never collect broker passwords or trading MPINs during registration.
@@ -350,14 +379,14 @@ export default function SignupPage() {
         </div>
 
         {/* Link to Login */}
-        <p className="mt-6 text-center text-xs text-neutral-600">
+        <p className="mt-4 text-center text-xs text-neutral-600">
           Already have an account?{' '}
           <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
             Sign in
           </Link>
         </p>
 
-        <p className="mt-2 text-center text-xs text-neutral-400">
+        <p className="mt-1.5 text-center text-[11px] sm:text-xs text-neutral-400">
           <Link href="/" className="hover:text-neutral-600">
             ← Return to public website
           </Link>

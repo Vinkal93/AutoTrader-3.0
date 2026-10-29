@@ -51,7 +51,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-sm animate-in fade-in duration-200"
     >
       <div
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-neutral-200 p-6 space-y-4 animate-in zoom-in-95 duration-200"
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-neutral-200 p-4 sm:p-6 max-h-[92dvh] overflow-y-auto space-y-4 animate-in zoom-in-95 duration-200"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

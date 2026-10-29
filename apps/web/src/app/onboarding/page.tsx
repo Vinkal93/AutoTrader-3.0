@@ -106,7 +106,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-[100dvh] bg-neutral-50 flex flex-col justify-center py-4 sm:py-8 md:py-12 px-3 sm:px-6 lg:px-8 font-sans selection:bg-blue-100 selection:text-blue-900">
       <div className="max-w-2xl w-full mx-auto">
         {/* Header Branding & Step Indicators */}
         <div className="text-center mb-8">
@@ -148,7 +148,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Card Body */}
-        <div className="bg-white p-6 sm:p-10 rounded-3xl border border-neutral-200/80 shadow-sm relative">
+        <div className="bg-white p-4 sm:p-7 md:p-10 rounded-2xl sm:rounded-3xl border border-neutral-200/80 shadow-sm relative">
           {/* STEP 1: Welcome & Profile */}
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in duration-150">
@@ -172,7 +172,7 @@ export default function OnboardingPage() {
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="block w-full pl-9 pr-3 min-h-[42px] py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>

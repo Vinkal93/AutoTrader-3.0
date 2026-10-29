@@ -56,33 +56,33 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans selection:bg-blue-100 selection:text-blue-900">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <div className="min-h-[100dvh] bg-neutral-50 flex flex-col justify-center py-4 sm:py-8 md:py-12 px-3 sm:px-6 lg:px-8 font-sans selection:bg-blue-100 selection:text-blue-900">
+      <div className="w-full max-w-md mx-auto text-center px-2">
         <Link
           href="/"
           className="inline-flex items-center gap-2.5 text-neutral-900 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-xl"
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
             <TrendingUp className="w-5 h-5" />
           </div>
-          <span className="font-bold text-xl tracking-tight">
+          <span className="font-bold text-lg sm:text-xl tracking-tight">
             AutoTrader <span className="text-blue-600">3.0</span>
           </span>
         </Link>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-neutral-900">
-          Set New Password
+        <h1 className="mt-2.5 sm:mt-4 text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">
+          Create New Password
         </h1>
-        <p className="mt-1 text-xs text-neutral-600">
-          Create a secure, strong password for your workspace account
+        <p className="mt-1 text-[11px] sm:text-xs text-neutral-600 max-w-xs mx-auto">
+          Choose a secure, strong password for your trading workspace
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-sm border border-neutral-200/80 rounded-2xl">
+      <div className="mt-4 sm:mt-6 w-full max-w-md mx-auto">
+        <div className="bg-white p-4 sm:p-7 md:p-8 shadow-sm border border-neutral-200/80 rounded-2xl">
           {errorMessage && (
             <div
               role="alert"
-              className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 animate-in fade-in duration-150"
+              className="mb-4 p-3 sm:p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 animate-in fade-in duration-150"
             >
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
@@ -90,20 +90,18 @@ function ResetPasswordForm() {
           )}
 
           {isSuccess ? (
-            <div className="text-center space-y-4 py-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+            <div className="text-center py-2 space-y-3">
+              <div className="w-11 h-11 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 shadow-2xs">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h2 className="text-base font-bold text-neutral-900">
-                Password Updated Successfully
-              </h2>
+              <h2 className="text-base font-bold text-neutral-900">Password Updated Successfully</h2>
               <p className="text-xs text-neutral-600 leading-relaxed">
-                Your account password has been updated. You can now sign in to your trading workspace.
+                Your credentials have been securely updated. You can now sign in to your trader account.
               </p>
-              <div className="pt-4 border-t border-neutral-100">
+              <div className="pt-3">
                 <Link
                   href="/login"
-                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
+                  className="inline-flex items-center justify-center gap-2 w-full min-h-[44px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
                 >
                   Proceed to Sign In
                   <ArrowRight className="w-4 h-4" />
@@ -111,9 +109,9 @@ function ResetPasswordForm() {
               </div>
             </div>
           ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-3.5">
               <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-neutral-700">
+                <label htmlFor="password" className="block text-[11px] sm:text-xs font-semibold text-neutral-700">
                   New Password <span className="text-neutral-400 font-normal">(Min. 8 characters)</span>
                 </label>
                 <div className="mt-1 relative rounded-xl shadow-2xs">
@@ -129,13 +127,13 @@ function ResetPasswordForm() {
                     placeholder="••••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-9 pr-10 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
+                    className="block w-full min-h-[42px] pl-9 pr-10 py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600 min-h-[42px] min-w-[36px] justify-center"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -143,7 +141,7 @@ function ResetPasswordForm() {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-xs font-semibold text-neutral-700">
+                <label htmlFor="confirmPassword" className="block text-[11px] sm:text-xs font-semibold text-neutral-700">
                   Confirm New Password
                 </label>
                 <div className="mt-1 relative rounded-xl shadow-2xs">
@@ -159,16 +157,16 @@ function ResetPasswordForm() {
                     placeholder="••••••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2.5 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
+                    className="block w-full min-h-[42px] pl-9 pr-3 py-2 text-base sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent placeholder:text-neutral-400"
                   />
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-1.5 sm:pt-2">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-sm transition-colors disabled:opacity-50"
+                  className="w-full min-h-[44px] flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-sm transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -177,7 +175,7 @@ function ResetPasswordForm() {
                     </>
                   ) : (
                     <>
-                      Update Password
+                      Update Password & Sign In
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -185,6 +183,15 @@ function ResetPasswordForm() {
               </div>
             </form>
           )}
+
+          <div className="mt-4 pt-3.5 border-t border-neutral-100 text-center">
+            <Link
+              href="/login"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+            >
+              ← Back to Sign In
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -195,8 +202,8 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-neutral-50 flex items-center justify-center font-sans">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="min-h-[100dvh] flex items-center justify-center bg-neutral-50">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
         </div>
       }
     >

@@ -785,7 +785,7 @@ export default function SuperAdminPortalPage() {
       {/* MODAL 1: Manage User Status */}
       {userActionModalOpen && selectedUserId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 max-w-md w-full shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-6 max-h-[92dvh] overflow-y-auto max-w-md w-full shadow-xl space-y-4">
             <h3 className="font-bold text-base text-neutral-900">Manage User Account</h3>
             <p className="text-xs text-neutral-500">
               User ID: <span className="font-mono">{selectedUserId}</span>
@@ -856,7 +856,7 @@ export default function SuperAdminPortalPage() {
       {/* MODAL 2: Configure Broker */}
       {editingBroker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 max-w-md w-full shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-6 max-h-[92dvh] overflow-y-auto max-w-md w-full shadow-xl space-y-4">
             <h3 className="font-bold text-base text-neutral-900">Configure {editingBroker.name}</h3>
 
             <div className="space-y-3 text-xs">
@@ -959,7 +959,7 @@ export default function SuperAdminPortalPage() {
       {/* MODAL 3: Edit Plan */}
       {editingPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6 max-w-md w-full shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-6 max-h-[92dvh] overflow-y-auto max-w-md w-full shadow-xl space-y-4">
             <h3 className="font-bold text-base text-neutral-900">Edit Plan: {editingPlan.name}</h3>
 
             <div className="space-y-3 text-xs">
@@ -1061,7 +1061,7 @@ export default function SuperAdminPortalPage() {
       {/* MODAL 4: Emergency Control Confirmation */}
       {emergencyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-rose-300 p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white rounded-2xl border border-rose-300 p-4 sm:p-6 max-h-[92dvh] overflow-y-auto max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center">
                 <AlertOctagon className="w-6 h-6" />
