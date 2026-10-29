@@ -52,6 +52,15 @@ import {
   type RecoveryReconciliationResult,
   type RecoveryActionRequest,
   type EmergencyRunbookStep,
+  type BrokerProviderInfo,
+  type BrokerConnectionSummary,
+  type BrokerPermissions,
+  type BrokerAccountProfile,
+  type InitiateAuthRequest,
+  type InitiateAuthResponse,
+  type AuthCallbackRequest,
+  type ConnectBrokerRequest,
+  type IpCheckResponse,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -59,6 +68,12 @@ export const queryKeys = {
   health: ['health'] as const,
   systemStatus: ['systemStatus'] as const,
   brokerConnection: ['brokerConnection'] as const,
+  brokerProviders: ['brokerProviders'] as const,
+  brokerConnections: ['brokerConnections'] as const,
+  brokerConnectionDetail: (id: string) => ['brokerConnectionDetail', id] as const,
+  brokerProfile: (id: string) => ['brokerProfile', id] as const,
+  brokerPermissions: (id: string) => ['brokerPermissions', id] as const,
+  brokerIpCheck: (providerId?: string) => ['brokerIpCheck', providerId] as const,
   accountFunds: ['accountFunds'] as const,
   accountSnapshots: ['accountSnapshots'] as const,
   feeSchedules: ['feeSchedules'] as const,
@@ -133,11 +148,12 @@ export function useBrokerConnection(refetchInterval: number | false = 10000) {
 }
 
 // 4. Account Funds
-export function useAccountFunds(refetchInterval: number | false = 15000) {
+export function useAccountFunds(connectionId?: string | null, refetchInterval: number | false = 15000) {
   return useQuery({
-    queryKey: queryKeys.accountFunds,
+    queryKey: connectionId ? [...queryKeys.accountFunds, connectionId] : queryKeys.accountFunds,
     queryFn: async () => {
-      const res = await api.get<AccountFundsResponse>(API_ROUTES.accountFunds);
+      const url = connectionId ? `${API_ROUTES.accountFunds}?connection_id=${connectionId}` : API_ROUTES.accountFunds;
+      const res = await api.get<AccountFundsResponse>(url);
       return res.data;
     },
     refetchInterval,
@@ -146,11 +162,12 @@ export function useAccountFunds(refetchInterval: number | false = 15000) {
 }
 
 // 5. Positions
-export function usePositions(refetchInterval: number | false = 5000) {
+export function usePositions(connectionId?: string | null, refetchInterval: number | false = 5000) {
   return useQuery({
-    queryKey: queryKeys.positions,
+    queryKey: connectionId ? [...queryKeys.positions, connectionId] : queryKeys.positions,
     queryFn: async () => {
-      const res = await api.get<Position[]>(API_ROUTES.positions);
+      const url = connectionId ? `${API_ROUTES.positions}?connection_id=${connectionId}` : API_ROUTES.positions;
+      const res = await api.get<Position[]>(url);
       return res.data;
     },
     refetchInterval,
@@ -159,11 +176,12 @@ export function usePositions(refetchInterval: number | false = 5000) {
 }
 
 // 6. Orders
-export function useOrders(refetchInterval: number | false = 5000) {
+export function useOrders(connectionId?: string | null, refetchInterval: number | false = 5000) {
   return useQuery({
-    queryKey: queryKeys.orders,
+    queryKey: connectionId ? [...queryKeys.orders, connectionId] : queryKeys.orders,
     queryFn: async () => {
-      const res = await api.get<Order[]>(API_ROUTES.orders);
+      const url = connectionId ? `${API_ROUTES.orders}?connection_id=${connectionId}` : API_ROUTES.orders;
+      const res = await api.get<Order[]>(url);
       return res.data;
     },
     refetchInterval,
@@ -172,11 +190,12 @@ export function useOrders(refetchInterval: number | false = 5000) {
 }
 
 // 7. Trades
-export function useTrades(refetchInterval: number | false = 10000) {
+export function useTrades(connectionId?: string | null, refetchInterval: number | false = 10000) {
   return useQuery({
-    queryKey: queryKeys.trades,
+    queryKey: connectionId ? [...queryKeys.trades, connectionId] : queryKeys.trades,
     queryFn: async () => {
-      const res = await api.get<Trade[]>(API_ROUTES.trades);
+      const url = connectionId ? `${API_ROUTES.trades}?connection_id=${connectionId}` : API_ROUTES.trades;
+      const res = await api.get<Trade[]>(url);
       return res.data;
     },
     refetchInterval,
@@ -222,11 +241,12 @@ export function useActiveStrategy() {
 }
 
 // 11. Dashboard Overview
-export function useDashboardOverview(refetchInterval: number | false = 5000) {
+export function useDashboardOverview(connectionId?: string | null, refetchInterval: number | false = 5000) {
   return useQuery({
-    queryKey: queryKeys.dashboardOverview,
+    queryKey: connectionId ? [...queryKeys.dashboardOverview, connectionId] : queryKeys.dashboardOverview,
     queryFn: async () => {
-      const res = await api.get<DashboardOverview>(API_ROUTES.dashboardOverview);
+      const url = connectionId ? `${API_ROUTES.dashboardOverview}?connection_id=${connectionId}` : API_ROUTES.dashboardOverview;
+      const res = await api.get<DashboardOverview>(url);
       return res.data;
     },
     refetchInterval,
@@ -804,6 +824,172 @@ export function useTriggerReconciliation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.watchdogStatus });
       queryClient.invalidateQueries({ queryKey: ['systemIncidents'] });
+    },
+  });
+}
+
+// ==============================================================================
+// 39. Phase 4 & 5: Multi-Broker Queries and Mutations
+// ==============================================================================
+
+export function useBrokerProviders() {
+  return useQuery({
+    queryKey: queryKeys.brokerProviders,
+    queryFn: async () => {
+      const res = await api.get<BrokerProviderInfo[]>(API_ROUTES.brokerProviders);
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+}
+
+export function useBrokerConnections(refetchInterval: number | false = 10000) {
+  return useQuery({
+    queryKey: queryKeys.brokerConnections,
+    queryFn: async () => {
+      const res = await api.get<BrokerConnectionSummary[]>(API_ROUTES.brokerConnections);
+      return res.data;
+    },
+    refetchInterval,
+  });
+}
+
+export function useBrokerConnectionDetail(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.brokerConnectionDetail(id ?? ''),
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await api.get<BrokerConnectionSummary>(`${API_ROUTES.brokerConnections}/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useBrokerAccountProfile(connectionId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.brokerProfile(connectionId ?? ''),
+    queryFn: async () => {
+      if (!connectionId) return null;
+      const res = await api.get<BrokerAccountProfile | null>(`${API_ROUTES.brokerConnections}/${connectionId}/profile`);
+      return res.data;
+    },
+    enabled: !!connectionId,
+  });
+}
+
+export function useBrokerPermissions(connectionId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.brokerPermissions(connectionId ?? ''),
+    queryFn: async () => {
+      if (!connectionId) return null;
+      const res = await api.get<BrokerPermissions>(`${API_ROUTES.brokerConnections}/${connectionId}/permissions`);
+      return res.data;
+    },
+    enabled: !!connectionId,
+  });
+}
+
+export function useBrokerIpCheck(providerId = 'KOTAK_NEO') {
+  return useQuery({
+    queryKey: queryKeys.brokerIpCheck(providerId),
+    queryFn: async () => {
+      const res = await api.get<IpCheckResponse>(`${API_ROUTES.brokerIpCheck}?provider_id=${providerId}`);
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+}
+
+export function useInitiateBrokerAuth() {
+  return useMutation({
+    mutationFn: async (payload: InitiateAuthRequest) => {
+      const res = await api.post<InitiateAuthResponse>(API_ROUTES.brokerInitiateAuth, payload);
+      return res.data;
+    },
+  });
+}
+
+export function useBrokerAuthCallback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: AuthCallbackRequest) => {
+      const res = await api.post<BrokerConnectionSummary>(API_ROUTES.brokerAuthCallback, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
+      queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+    },
+  });
+}
+
+export function useConnectBrokerConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (connectionId: string) => {
+      const res = await api.post<BrokerConnectionResponse>(`${API_ROUTES.brokerConnections}/${connectionId}/connect`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
+      queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+    },
+  });
+}
+
+export function useReconnectBrokerConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (connectionId: string) => {
+      const res = await api.post<BrokerConnectionResponse>(`${API_ROUTES.brokerConnections}/${connectionId}/reconnect`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
+      queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+    },
+  });
+}
+
+export function useDisconnectBrokerConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (connectionId: string) => {
+      const res = await api.post<BrokerConnectionResponse>(`${API_ROUTES.brokerConnections}/${connectionId}/disconnect`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
+      queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+    },
+  });
+}
+
+export function useDeleteBrokerConnection() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (connectionId: string) => {
+      const res = await api.delete<{ revoked: boolean }>(`${API_ROUTES.brokerConnections}/${connectionId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
+      queryClient.invalidateQueries({ queryKey: ['dashboardOverview'] });
+    },
+  });
+}
+
+export function useUpdateBrokerPermissions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ connectionId, payload }: { connectionId: string; payload: Partial<BrokerPermissions> }) => {
+      const res = await api.put<BrokerPermissions>(`${API_ROUTES.brokerConnections}/${connectionId}/permissions`, payload);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerPermissions(variables.connectionId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.brokerConnections });
     },
   });
 }

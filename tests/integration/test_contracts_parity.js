@@ -65,6 +65,11 @@ const requiredRoutes = [
   '/api/v1/dashboard/overview',
   '/api/v1/analytics/performance',
   '/api/v1/system/events',
+  '/api/v1/broker/providers',
+  '/api/v1/broker/connections',
+  '/api/v1/broker/connections/initiate-auth',
+  '/api/v1/broker/connections/callback',
+  '/api/v1/broker/ip-check',
 ];
 
 for (const route of requiredRoutes) {
@@ -73,6 +78,16 @@ for (const route of requiredRoutes) {
     `Missing required API route definition: ${route}`
   );
   console.log(`✓ Route contract verified: ${route}`);
+}
+
+// 2b. Verify Phase 4 Multi-Broker Target Identifiers
+const targetBrokers = ['KOTAK_NEO', 'DHAN', 'UPSTOX', 'FYERS', 'ZERODHA', 'ANGEL_ONE'];
+for (const b of targetBrokers) {
+  assert(
+    contractsSrc.includes(b),
+    `Missing required Phase 4 broker target: ${b}`
+  );
+  console.log(`✓ Broker target verified: ${b}`);
 }
 
 // 3. Verify financial data types use exact strings/decimals rather than floating point for balances

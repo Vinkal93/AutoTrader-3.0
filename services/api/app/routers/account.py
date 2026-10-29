@@ -3,7 +3,11 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.broker.factory import get_broker_adapter
+from app.broker.factory import (
+    get_broker_adapter,
+    get_broker_adapter_for_connection,
+)
+from app.models.entities import BrokerConnection
 from app.database import get_db
 from app.models.enums import BrokerConnectionState, DataFreshness
 from app.routers.deps import success_response
@@ -17,6 +21,7 @@ from app.schemas.financial_accounting import (
 )
 from app.services.auth_service import CurrentUser, get_current_user
 from app.services.financial_accounting import FinancialAccountingService
+from sqlalchemy import select
 
 router = APIRouter(prefix="/api/v1", tags=["Account & Funds"])
 
@@ -24,11 +29,21 @@ router = APIRouter(prefix="/api/v1", tags=["Account & Funds"])
 @router.get("/account/funds", response_model=ApiResponse[Optional[AccountFundsResponse]])
 async def get_account_funds(
     request: Request,
+    connection_id: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[Optional[AccountFundsResponse]]:
     """Retrieve live funds and margin. Returns None honestly when disconnected."""
-    broker = get_broker_adapter()
+    if connection_id:
+        c_stmt = select(BrokerConnection).where(
+            BrokerConnection.id == connection_id,
+            BrokerConnection.user_id == user.id,
+        )
+        c_res = await db.execute(c_stmt)
+        conn = c_res.scalar_one_or_none()
+        broker = get_broker_adapter_for_connection(conn) if conn else get_broker_adapter()
+    else:
+        broker = get_broker_adapter()
     funds = await broker.get_funds()
     if funds is None:
         return success_response(

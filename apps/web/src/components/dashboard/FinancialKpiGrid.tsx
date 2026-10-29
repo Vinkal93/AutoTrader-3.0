@@ -10,6 +10,7 @@ import {
   useBrokerConnection,
 } from '@/hooks/use-queries';
 import { BrokerConnectionState, DataFreshness } from '@autotrader/api-contracts';
+import { useUIStore } from '@/store/ui-store';
 import { formatCurrency, formatISTTime } from '@/lib/formatters';
 import {
   Wallet,
@@ -28,9 +29,10 @@ import {
 export const FinancialKpiGrid: React.FC<{ className?: string }> = ({ className }) => {
   const [winRateRange, setWinRateRange] = useState<'TODAY' | '7D' | '30D' | 'ALL'>('TODAY');
 
+  const { activeBrokerConnectionId } = useUIStore();
   const { data: broker } = useBrokerConnection();
-  const { data: funds, isLoading: fundsLoading } = useAccountFunds();
-  const { data: overview, isLoading: overviewLoading } = useDashboardOverview();
+  const { data: funds, isLoading: fundsLoading } = useAccountFunds(activeBrokerConnectionId);
+  const { data: overview, isLoading: overviewLoading } = useDashboardOverview(activeBrokerConnectionId);
   const { data: perf, isLoading: perfLoading } = usePerformanceMetrics(winRateRange);
   const { data: risk, isLoading: riskLoading } = useRiskAllowance();
 

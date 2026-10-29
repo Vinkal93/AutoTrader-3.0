@@ -1157,6 +1157,13 @@ export const API_ROUTES = {
   userProfile: '/api/v1/user/profile',
   userPreferences: '/api/v1/user/preferences',
   onboardingComplete: '/api/v1/user/onboarding/complete',
+
+  // Multi-Broker Routes (Phase 4 and 5)
+  brokerProviders: '/api/v1/broker/providers',
+  brokerConnections: '/api/v1/broker/connections',
+  brokerInitiateAuth: '/api/v1/broker/connections/initiate-auth',
+  brokerAuthCallback: '/api/v1/broker/connections/callback',
+  brokerIpCheck: '/api/v1/broker/ip-check',
 } as const;
 
 // ---- Auth & Profile Models ----
@@ -1208,4 +1215,143 @@ export interface OnboardingPayload {
   defaultLotSize?: number;
   riskAppetite?: 'CONSERVATIVE' | 'MODERATE' | 'AGGRESSIVE';
   brokerCredentials?: Record<string, string>;
+}
+
+
+// ==============================================================================
+// MULTI-BROKER PLATFORM CONTRACTS (PHASE 4 & 5)
+// ==============================================================================
+
+export const BrokerId = {
+  KOTAK_NEO: 'KOTAK_NEO',
+  DHAN: 'DHAN',
+  UPSTOX: 'UPSTOX',
+  FYERS: 'FYERS',
+  ZERODHA: 'ZERODHA',
+  ANGEL_ONE: 'ANGEL_ONE',
+} as const;
+export type BrokerId = (typeof BrokerId)[keyof typeof BrokerId];
+
+export const BrokerAuthModel = {
+  OAUTH2: 'OAUTH2',
+  API_KEY_TOTP: 'API_KEY_TOTP',
+  ACCESS_TOKEN: 'ACCESS_TOKEN',
+  INTERACTIVE: 'INTERACTIVE',
+} as const;
+export type BrokerAuthModel = (typeof BrokerAuthModel)[keyof typeof BrokerAuthModel];
+
+export interface BrokerCapabilities {
+  supportsOptionsChain: boolean;
+  supportsRealtimeTicks: boolean;
+  supportsHistoricalCandles: boolean;
+  supportsOrderExecution: boolean;
+  supportsStopLossLimit: boolean;
+  supportsMarketOrdersForOptions: boolean;
+  supportsWebhooks: boolean;
+  requiresStaticIp: boolean;
+  dailySessionResetIst: string;
+  orderRateLimitPerSec: number;
+  quoteRateLimitPerSec: number;
+}
+
+export interface BrokerProviderInfo {
+  id: string;
+  name: string;
+  apiVersion: string;
+  authModel: BrokerAuthModel;
+  isPartnerApproved: boolean;
+  isActive: boolean;
+  requiresStaticIp: boolean;
+  loginUrl?: string;
+  apiDocsUrl?: string;
+  capabilities: BrokerCapabilities;
+  description: string;
+}
+
+export interface BrokerPermissions {
+  id: string;
+  connectionId: string;
+  canReadQuotes: boolean;
+  canReadFunds: boolean;
+  canReadPositions: boolean;
+  canExecuteOrders: boolean;
+  maxLotsPerOrder: number;
+  allowedSegments: string[];
+  updatedAt: string;
+}
+
+export interface BrokerConnectionSummary {
+  id: string;
+  userId: string;
+  providerId: string;
+  brokerName: string;
+  accountId: string | null;
+  alias: string;
+  isActive: boolean;
+  state: BrokerConnectionState;
+  connectedAt: string | null;
+  sessionExpiresAt: string | null;
+  lastSyncedAt: string | null;
+  marketFeedStatus: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
+  orderFeedStatus: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
+  reportApiStatus: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
+  staticIpCompliant: boolean | null;
+  egressIpVerified?: string | null;
+  lastError: string | null;
+  permissions?: BrokerPermissions;
+}
+
+export interface BrokerAccountProfile {
+  clientCode: string;
+  clientName: string;
+  emailMasked: string;
+  panMasked: string;
+  brokerName: string;
+  exchangesEnabled: string[];
+  productsEnabled: string[];
+  bankAccountMasked?: string;
+  accountStatus: 'ACTIVE' | 'SUSPENDED' | 'DORMANT';
+}
+
+export interface InitiateAuthRequest {
+  providerId: string;
+  alias?: string;
+  redirectUri?: string;
+}
+
+export interface InitiateAuthResponse {
+  authUrl?: string;
+  state: string;
+  authModel: BrokerAuthModel;
+  requiresCredentialsForm: boolean;
+  instructions: string;
+}
+
+export interface AuthCallbackRequest {
+  providerId: string;
+  state: string;
+  code?: string;
+  token?: string;
+  credentials?: Record<string, string>;
+  alias?: string;
+}
+
+export interface ConnectBrokerRequest {
+  providerId: string;
+  alias?: string;
+  apiKey?: string;
+  apiSecret?: string;
+  mobileNumber?: string;
+  totp?: string;
+  mpin?: string;
+  clientId?: string;
+}
+
+export interface IpCheckResponse {
+  clientIp: string;
+  serverEgressIp: string;
+  isStaticIpConfigured: boolean;
+  isWhitelisted: boolean;
+  brokerTarget: string;
+  timestamp: string;
 }

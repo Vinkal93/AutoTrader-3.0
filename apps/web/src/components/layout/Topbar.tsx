@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   useSystemStatus,
   useBrokerConnection,
+  useBrokerConnections,
   useNiftyQuote,
   useSystemEvents,
   useSetTradingMode,
@@ -33,9 +34,15 @@ export const Topbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { data: systemStatus } = useSystemStatus();
   const { data: broker } = useBrokerConnection();
+  const { data: connections = [] } = useBrokerConnections();
   const { data: quote } = useNiftyQuote();
   const { data: events } = useSystemEvents(50);
-  const { setMobileSidebarOpen, theme, toggleTheme, openConfirmDialog } = useUIStore();
+  const { setMobileSidebarOpen, theme, toggleTheme, openConfirmDialog, activeBrokerConnectionId, setActiveBrokerConnectionId } = useUIStore();
+  React.useEffect(() => {
+    if (!activeBrokerConnectionId && connections.length > 0) {
+      setActiveBrokerConnectionId(connections[0].id);
+    }
+  }, [activeBrokerConnectionId, connections, setActiveBrokerConnectionId]);
   const setTradingMode = useSetTradingMode();
 
   const currentMode = systemStatus?.tradingMode ?? TradingMode.OFF;
@@ -114,11 +121,30 @@ export const Topbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Broker State Indicator */}
-        <div className="hidden xl:flex items-center gap-2 text-xs border-l border-neutral-200 pl-4">
-          <Cpu className="w-4 h-4 text-neutral-400" />
-          <span className="text-neutral-500 font-medium">Kotak Neo:</span>
-          <StatusIndicator status={brokerState} size="sm" showLabel />
+        {/* Account Context & Multi-Broker Selector (Phase 5) */}
+        <div className="hidden md:flex items-center gap-2 text-xs border-l border-neutral-200 pl-4">
+          <span className="text-neutral-400 font-semibold text-[11px] uppercase tracking-wider">Account:</span>
+          {connections.length > 0 ? (
+            <select
+              value={activeBrokerConnectionId || connections[0].id}
+              onChange={(e) => setActiveBrokerConnectionId(e.target.value)}
+              className="bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-800 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+              title="Switch connected broker account"
+            >
+              {connections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.brokerName} ({c.alias})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Link
+              href="/broker"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-semibold text-xs hover:bg-amber-100 transition-colors"
+            >
+              Connect Broker
+            </Link>
+          )}
         </div>
       </div>
 

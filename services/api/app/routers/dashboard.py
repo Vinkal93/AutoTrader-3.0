@@ -1,13 +1,25 @@
-"""Consolidated dashboard overview endpoint."""
+"""
+Consolidated personal trader dashboard overview endpoint (Phase 5).
+Account-aware, multi-tenant scoped, and zero-mock financial principles.
+"""
 
 from decimal import Decimal
 from typing import Optional
-from fastapi import APIRouter, Depends, Request
-from sqlalchemy import desc, func, select
+from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.broker.factory import get_broker_adapter
+from sqlalchemy.orm import selectinload
+
+from app.broker.factory import (
+    get_broker_adapter,
+    get_broker_adapter_for_connection,
+)
 from app.database import get_db
-from app.models.entities import SystemEvent as SystemEventModel, TradeCycle
+from app.models.entities import (
+    BrokerConnection,
+    SystemEvent as SystemEventModel,
+    TradeCycle,
+)
 from app.models.enums import BrokerConnectionState, DataFreshness, SystemEventSeverity
 from app.routers.deps import success_response
 from app.schemas.common import ApiResponse
@@ -29,17 +41,59 @@ router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard"])
 @router.get("/overview", response_model=ApiResponse[DashboardOverview])
 async def get_dashboard_overview(
     request: Request,
+    connection_id: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[DashboardOverview]:
-    """Retrieve consolidated overview for dashboard header, cards, and charts."""
-    broker = get_broker_adapter()
-    conn_status = await broker.connection_status()
+    """Retrieve consolidated account-aware overview for dashboard header, cards, and charts."""
+    # 1. Resolve active broker connection for user
+    active_conn = None
+    if connection_id:
+        c_stmt = (
+            select(BrokerConnection)
+            .where(
+                BrokerConnection.id == connection_id,
+                BrokerConnection.user_id == user.id,
+            )
+            .options(selectinload(BrokerConnection.session))
+        )
+        c_res = await db.execute(c_stmt)
+        active_conn = c_res.scalar_one_or_none()
+
+    if not active_conn:
+        # Fall back to user's first active connection
+        c_stmt = (
+            select(BrokerConnection)
+            .where(BrokerConnection.user_id == user.id)
+            .order_by(desc(BrokerConnection.created_at))
+            .options(selectinload(BrokerConnection.session))
+        )
+        c_res = await db.execute(c_stmt)
+        active_conn = c_res.scalars().first()
+
+    # Determine broker adapter & connection status
+    if active_conn:
+        broker = get_broker_adapter_for_connection(active_conn)
+        conn_status = await broker.connection_status()
+    else:
+        # Fallback to default adapter for backward compatibility
+        broker = get_broker_adapter()
+        conn_status = await broker.connection_status()
+
     engine_state = StateService.get_current_state()
     trading_mode = StateService.get_trading_mode()
 
-    # 1. Today's summary from trade_cycles
-    today_trades_stmt = select(TradeCycle)
+    # 2. Today's summary from trade_cycles (Tenant scoped)
+    today_trades_stmt = select(TradeCycle).where(
+        or_(TradeCycle.user_id == user.id, TradeCycle.user_id.is_(None))
+    )
+    if active_conn:
+        today_trades_stmt = today_trades_stmt.where(
+            or_(
+                TradeCycle.broker_connection_id == active_conn.id,
+                TradeCycle.broker_connection_id.is_(None),
+            )
+        )
     tc_res = await db.execute(today_trades_stmt)
     trade_cycles = tc_res.scalars().all()
 
@@ -63,7 +117,7 @@ async def get_dashboard_overview(
             net_pnl=f"{net_pnl:.2f}",
         )
 
-    # 2. Account summary from broker (honest null if disconnected)
+    # 3. Account summary from broker (honest null if disconnected or unavailable)
     account_summary: Optional[DashboardAccountSummary] = None
     if conn_status.state == BrokerConnectionState.CONNECTED:
         funds = await broker.get_funds()
@@ -74,7 +128,7 @@ async def get_dashboard_overview(
                 unrealized_pnl=funds.unrealized_pnl,
             )
 
-    # 3. NIFTY Spot quote (honest null if disconnected)
+    # 4. NIFTY Spot quote (honest null if disconnected)
     nifty_spot: Optional[DashboardNiftySpot] = None
     quote = await broker.get_quotes(symbol="NIFTY")
     if quote:
@@ -85,7 +139,7 @@ async def get_dashboard_overview(
             freshness=quote.freshness,
         )
 
-    # 4. Active strategy
+    # 5. Active strategy
     active_strat = await StrategyService.get_active_strategy(db)
     active_strategy_info = (
         DashboardActiveStrategy(
@@ -97,9 +151,15 @@ async def get_dashboard_overview(
         else None
     )
 
-    # 5. Recent system events (last 10)
+    # 6. Recent system events (Tenant isolated or system-wide)
     events_stmt = (
         select(SystemEventModel)
+        .where(
+            or_(
+                SystemEventModel.user_id == user.id,
+                SystemEventModel.user_id.is_(None),
+            )
+        )
         .order_by(desc(SystemEventModel.timestamp))
         .limit(10)
     )

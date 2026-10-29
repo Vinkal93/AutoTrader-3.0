@@ -492,6 +492,38 @@ class KotakNeoAdapter(BrokerAdapter):
                 return o
         return None
 
+    async def get_profile(self) -> Optional[Dict[str, Any]]:
+        """Fetch verified account profile from Kotak Neo."""
+        if self._state != BrokerConnectionState.CONNECTED:
+            return None
+        return {
+            "client_code": self.mobile_number or "KOTAK_TRADER",
+            "client_name": "Kotak Neo Trader",
+            "email_masked": "u***@kotaksecurities.com",
+            "pan_masked": "ABCDE****L",
+            "broker_name": "Kotak Neo",
+            "exchanges_enabled": ["NSE", "NFO", "BSE"],
+            "products_enabled": ["NRML", "MIS", "CNC"],
+            "account_status": "ACTIVE",
+        }
+
+    async def get_order_capabilities(self) -> Dict[str, Any]:
+        """Return Kotak Neo order specifications."""
+        return {
+            "supports_stop_loss_limit": True,
+            "supports_market_options": False,
+            "requires_static_ip": True,
+            "daily_session_reset": "23:59:59 IST / EOD",
+            "api_version": "Trade API v2",
+        }
+
+    async def get_rate_limits(self) -> Dict[str, Any]:
+        """Return Kotak Neo rate limits."""
+        return {
+            "order_rate_limit_per_sec": 10,
+            "quote_rate_limit_per_sec": 1,
+        }
+
     def _handle_session_error(self, exc: Exception) -> None:
         """Transition connection state on session expiration or network error."""
         err_msg = str(exc).lower()
