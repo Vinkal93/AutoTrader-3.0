@@ -4,7 +4,7 @@ Mirroring packages/api-contracts/src/index.ts.
 
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from app.models.enums import MarketTrendState, OptionType, OrderSide
+from app.models.enums import MarketTrendState, OptionType, OrderSide, OrderType
 from app.schemas.analytics import ChargeBreakdown
 
 
@@ -74,6 +74,8 @@ class OrderValidationRequest(BaseModel):
     price: str  # Intended executable limit price
     targetPrice: str = Field(..., alias="target_price")
     stopLossPrice: str = Field(..., alias="stop_loss_price")
+    orderType: Optional[OrderType] = Field(OrderType.LIMIT, alias="order_type")
+    connectionId: Optional[str] = Field(None, alias="connection_id")
 
     class Config:
         populate_by_name = True
@@ -92,6 +94,11 @@ class OrderValidationResult(BaseModel):
     quantityLotAligned: bool = Field(True, alias="quantity_lot_aligned")
     validationErrors: List[str] = Field(default_factory=list, alias="validation_errors")
     warnings: List[str] = Field(default_factory=list)
+    tradeValue: Optional[str] = Field(None, alias="trade_value")
+    netRiskRewardRatio: Optional[str] = Field(None, alias="net_risk_reward_ratio")
+    availableMargin: Optional[str] = Field(None, alias="available_margin")
+    marginSufficient: bool = Field(True, alias="margin_sufficient")
+    brokerCapabilityWarnings: List[str] = Field(default_factory=list, alias="broker_capability_warnings")
 
     class Config:
         populate_by_name = True

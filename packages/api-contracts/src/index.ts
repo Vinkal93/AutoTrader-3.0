@@ -837,6 +837,8 @@ export interface OrderValidationRequest {
   price: string;
   targetPrice: string;
   stopLossPrice: string;
+  orderType?: OrderType;
+  connectionId?: string;
 }
 
 export interface OrderValidationResult {
@@ -852,6 +854,11 @@ export interface OrderValidationResult {
   quantityLotAligned: boolean;
   validationErrors: string[];
   warnings: string[];
+  tradeValue?: string;
+  netRiskRewardRatio?: string;
+  availableMargin?: string | null;
+  marginSufficient?: boolean;
+  brokerCapabilityWarnings?: string[];
 }
 
 // ---- Strategy Versions & Execution Runs (Phase 4) ----
@@ -952,6 +959,8 @@ export interface OrderSubmissionRequest {
   tradingMode: TradingMode;
   idempotencyKey?: string;
   strategyRunId?: string;
+  connectionId?: string;
+  brokerId?: string;
 }
 
 export interface OrderSubmissionResult {
@@ -980,6 +989,21 @@ export interface OrderCancelResult {
   lifecycleState: OrderLifecycleState;
   cancelledAt: string;
   message: string;
+}
+
+export interface OrderEventRecord {
+  id: string;
+  orderId: string;
+  eventType: string;
+  timestamp: string;
+  userId?: string | null;
+  tenantId?: string | null;
+  brokerOrderId?: string | null;
+  requestedQuantity?: number | null;
+  filledQuantity?: number | null;
+  rawBrokerResponseCode?: string | null;
+  failureCause?: string | null;
+  payload?: Record<string, any> | null;
 }
 
 export interface ReconciliationDiscrepancy {
@@ -1127,6 +1151,8 @@ export const API_ROUTES = {
   marketScanner: '/api/v1/market/scanner',
   marketTrend: '/api/v1/market/trend',
   ordersValidate: '/api/v1/orders/validate',
+  ordersTimeline: '/api/v1/orders/timeline',
+  orderEvents: '/api/v1/orders/:id/events',
   ordersEmergencyExit: '/api/v1/orders/emergency-exit',
   strategies: '/api/v1/strategies',
   activeStrategy: '/api/v1/strategies/active',

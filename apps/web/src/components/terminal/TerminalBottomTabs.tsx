@@ -10,6 +10,7 @@ import {
   useCancelOrder,
   useReconcileOrders,
   useFailureModes,
+  useOrderTimeline,
 } from '@/hooks/use-queries';
 import { OrderLifecycleState } from '@autotrader/api-contracts';
 import { formatCurrency, formatISTDateTime } from '@/lib/formatters';
@@ -25,16 +26,20 @@ import {
   XCircle,
   RefreshCw,
   HelpCircle,
+  Milestone,
 } from 'lucide-react';
+import { useUIStore } from '@/store/ui-store';
 
 export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className }) => {
+  const { activeBrokerConnectionId } = useUIStore();
   const [activeTab, setActiveTab] = useState<
-    'POSITIONS' | 'PENDING' | 'HISTORY' | 'EXECUTIONS' | 'LIFECYCLE' | 'ALERTS' | 'FAILURE_MODES'
+    'POSITIONS' | 'PENDING' | 'HISTORY' | 'EXECUTIONS' | 'TIMELINE' | 'LIFECYCLE' | 'ALERTS' | 'FAILURE_MODES'
   >('POSITIONS');
 
-  const { data: positions, isLoading: posLoading } = usePositions();
-  const { data: orders, isLoading: ordersLoading } = useOrders();
-  const { data: trades, isLoading: tradesLoading } = useTrades();
+  const { data: positions, isLoading: posLoading } = usePositions(activeBrokerConnectionId);
+  const { data: orders, isLoading: ordersLoading } = useOrders(activeBrokerConnectionId);
+  const { data: trades, isLoading: tradesLoading } = useTrades(activeBrokerConnectionId);
+  const { data: timelineEvents, isLoading: timelineLoading } = useOrderTimeline();
   const { data: events, isLoading: eventsLoading } = useSystemEvents(25);
   const { data: failureModes } = useFailureModes();
 
@@ -118,6 +123,20 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
         >
           <Activity className="w-3.5 h-3.5" />
           Executions ({trades?.length ?? 0})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('TIMELINE')}
+          className={cn(
+            'px-3 py-2 border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap',
+            activeTab === 'TIMELINE'
+              ? 'border-blue-600 text-blue-600 font-bold'
+              : 'border-transparent text-neutral-500 hover:text-neutral-900'
+          )}
+        >
+          <Milestone className="w-3.5 h-3.5" />
+          Order Event Timeline ({timelineEvents?.length ?? 0})
         </button>
 
         <button
@@ -402,6 +421,84 @@ export const TerminalBottomTabs: React.FC<{ className?: string }> = ({ className
                       <td className="py-2 px-3 text-right font-bold text-neutral-900">₹{t.price}</td>
                     </tr>
                   ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* TAB 4b: ORDER EVENT TIMELINE (Task 6) */}
+        {activeTab === 'TIMELINE' && (
+          <div className="overflow-x-auto select-none">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-neutral-50 text-neutral-500 font-semibold border-b border-neutral-200">
+                <tr>
+                  <th className="py-2 px-3">Timestamp (IST)</th>
+                  <th className="py-2 px-3">Event / Lifecycle</th>
+                  <th className="py-2 px-3">Order ID</th>
+                  <th className="py-2 px-3">Broker Order ID</th>
+                  <th className="py-2 px-3 text-right">Req / Filled</th>
+                  <th className="py-2 px-3">Raw Response</th>
+                  <th className="py-2 px-3">Reason / Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 text-neutral-800">
+                {timelineLoading ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-neutral-400 font-sans text-xs">
+                      Loading order event timeline...
+                    </td>
+                  </tr>
+                ) : !timelineEvents || timelineEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-neutral-400 font-sans text-xs">
+                      No order lifecycle events recorded yet. Submit a trade ticket to inspect the live audit stream.
+                    </td>
+                  </tr>
+                ) : (
+                  timelineEvents.map((ev) => {
+                    const isRejected = ev.eventType === 'REJECTED' || Boolean(ev.failureCause);
+                    const isFilled = ev.eventType === 'FILLED';
+                    const isAck = ev.eventType === 'ACKNOWLEDGED';
+                    return (
+                      <tr key={ev.id} className="hover:bg-neutral-50">
+                        <td className="py-2 px-3 text-neutral-500 font-sans text-[11px] whitespace-nowrap">
+                          {formatISTDateTime(ev.timestamp)}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span
+                            className={cn(
+                              'px-2 py-0.5 rounded-full font-bold text-[10px] uppercase border',
+                              isFilled
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : isRejected
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : isAck
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                            )}
+                          >
+                            {ev.eventType}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 truncate max-w-[120px]" title={ev.orderId}>
+                          {ev.orderId.slice(0, 8)}...
+                        </td>
+                        <td className="py-2 px-3 font-mono text-[11px] text-neutral-600">
+                          {ev.brokerOrderId ?? '—'}
+                        </td>
+                        <td className="py-2 px-3 text-right tabular-nums text-neutral-700">
+                          {ev.requestedQuantity ?? '—'} / {ev.filledQuantity ?? 0}
+                        </td>
+                        <td className="py-2 px-3 font-mono text-[10px] text-neutral-500">
+                          {ev.rawBrokerResponseCode ?? '—'}
+                        </td>
+                        <td className="py-2 px-3 text-[11px] text-neutral-600 truncate max-w-xs" title={ev.failureCause || (ev.payload as any)?.reason}>
+                          {ev.failureCause || (ev.payload as any)?.reason || '—'}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

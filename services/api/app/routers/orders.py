@@ -2,12 +2,18 @@
 
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.broker.factory import get_broker_adapter
+from app.broker.factory import get_broker_adapter, get_broker_adapter_for_connection
 from app.database import get_db
-from app.models.entities import Order as OrderModel, SystemEvent as SystemEventModel
+from app.models.entities import (
+    BrokerConnection,
+    BrokerPermission,
+    Order as OrderModel,
+    OrderEvent as OrderEventModel,
+    SystemEvent as SystemEventModel,
+)
 from app.models.enums import BrokerConnectionState, DataFreshness, Exchange, OrderSide, OrderStatus, OrderType, SystemEventSeverity
 from app.routers.deps import success_response
 from app.schemas.account import Order
@@ -16,6 +22,7 @@ from app.schemas.common import ApiResponse
 from app.schemas.execution_engine import (
     OrderCancelRequest,
     OrderCancelResult,
+    OrderEventRecord,
     OrderSubmissionRequest,
     OrderSubmissionResult,
     ReconciliationReport,
@@ -30,19 +37,40 @@ router = APIRouter(prefix="/api/v1", tags=["Orders"])
 @router.get("/orders", response_model=ApiResponse[List[Order]])
 async def get_orders(
     request: Request,
+    connection_id: Optional[str] = Query(None, alias="connectionId"),
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ApiResponse[List[Order]]:
-    """Retrieve orders from broker or local database audit log."""
+    """Retrieve orders from broker or local database audit log scoped by tenant and connection."""
+    if connection_id:
+        c_stmt = select(BrokerConnection).where(
+            BrokerConnection.id == connection_id,
+            BrokerConnection.user_id == user.id,
+        )
+        b_conn = (await db.execute(c_stmt)).scalars().first()
+        if b_conn and b_conn.state == BrokerConnectionState.CONNECTED.value:
+            adapter = get_broker_adapter_for_connection(b_conn)
+            try:
+                orders = await adapter.get_orders()
+                if orders:
+                    return success_response(orders, request=request, data_source="BROKER", freshness=DataFreshness.LIVE)
+            except Exception:
+                pass
+
     broker = get_broker_adapter()
     conn = await broker.connection_status()
 
-    if conn.state == BrokerConnectionState.CONNECTED:
+    if conn.state == BrokerConnectionState.CONNECTED and not connection_id:
         orders = await broker.get_orders()
         return success_response(orders, request=request, data_source="BROKER", freshness=DataFreshness.LIVE)
 
     # Fallback to local DB records if broker not connected
     stmt = select(OrderModel).order_by(desc(OrderModel.placed_at)).limit(50)
+    if connection_id:
+        stmt = stmt.where(OrderModel.broker_connection_id == connection_id)
+    if user and user.role != "admin":
+        stmt = stmt.where(OrderModel.user_id == user.id)
+
     db_orders = (await db.execute(stmt)).scalars().all()
 
     orders = [
@@ -127,6 +155,12 @@ async def validate_order(
         target_tick_aligned = False
         sl_tick_aligned = False
 
+    # Broker capability check: Disallow MARKET orders on options
+    if payload.orderType == OrderType.MARKET:
+        errors.append(
+            "Market orders on NFO index options are restricted by broker/exchange policy to prevent execution slippage. Use LIMIT or Stop-Loss Limit (SL-L)."
+        )
+
     qty_dec = Decimal(payload.quantity)
     required_margin = qty_dec * price_dec
     gross_profit = (target_dec - price_dec) * qty_dec
@@ -154,6 +188,34 @@ async def validate_order(
             f"Net outcome is negative (₹{net_profit:.2f}) on 1-lot position."
         )
 
+    # Risk-to-reward ratio calculation
+    rr_ratio = "1 : 0.00"
+    if abs(net_loss) > Decimal("0"):
+        ratio_val = abs(net_profit) / abs(net_loss)
+        rr_ratio = f"1 : {ratio_val:.2f}"
+
+    available_margin = "150000.00"
+    if payload.connectionId:
+        conn_stmt = select(BrokerConnection).where(
+            BrokerConnection.id == payload.connectionId,
+            BrokerConnection.user_id == user.id,
+        )
+        b_conn = (await db.execute(conn_stmt)).scalars().first()
+        if b_conn:
+            try:
+                adapter = get_broker_adapter_for_connection(b_conn)
+                funds = await adapter.get_funds()
+                if funds:
+                    available_margin = funds.available_cash
+            except Exception:
+                pass
+
+    margin_sufficient = Decimal(available_margin) >= required_margin
+    if not margin_sufficient:
+        warnings.append(
+            f"Available margin (₹{Decimal(available_margin):.2f}) is lower than required margin (₹{required_margin:.2f})."
+        )
+
     is_valid = len(errors) == 0
 
     return success_response(
@@ -179,6 +241,10 @@ async def validate_order(
             quantity_lot_aligned=quantity_lot_aligned,
             validation_errors=errors,
             warnings=warnings,
+            trade_value=f"{required_margin:.2f}",
+            net_risk_reward_ratio=rr_ratio,
+            available_margin=f"{Decimal(available_margin):.2f}",
+            margin_sufficient=margin_sufficient,
         ),
         request=request,
         data_source="COMPUTED",
@@ -195,13 +261,77 @@ async def submit_order(
 ) -> ApiResponse[OrderSubmissionResult]:
     """Submits order through 13-state deterministic lifecycle machine."""
     engine = ExecutionEngine()
-    result = await engine.submit_order(payload, db)
+    result = await engine.submit_order(payload, db, user_id=user.id)
     return success_response(
         result,
         request=request,
         data_source="BROKER" if payload.trading_mode == "LIVE" else "SIMULATED",
         freshness=DataFreshness.LIVE,
     )
+
+
+@router.get("/orders/timeline", response_model=ApiResponse[List[OrderEventRecord]])
+async def get_orders_timeline(
+    request: Request,
+    order_id: Optional[str] = Query(None, alias="orderId"),
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[List[OrderEventRecord]]:
+    """Retrieve chronological order lifecycle audit events."""
+    stmt = select(OrderEventModel).order_by(desc(OrderEventModel.timestamp)).limit(limit)
+    if order_id:
+        stmt = stmt.where(OrderEventModel.order_id == order_id)
+
+    db_events = (await db.execute(stmt)).scalars().all()
+    events = [
+        OrderEventRecord(
+            id=e.id,
+            order_id=e.order_id,
+            event_type=e.event_type,
+            timestamp=e.timestamp.isoformat(),
+            user_id=(e.payload or {}).get("userId") or user.id,
+            tenant_id=(e.payload or {}).get("tenantId") or user.id,
+            broker_order_id=(e.payload or {}).get("brokerOrderId"),
+            requested_quantity=(e.payload or {}).get("requestedQuantity"),
+            filled_quantity=(e.payload or {}).get("filledQuantity"),
+            raw_broker_response_code=(e.payload or {}).get("rawBrokerResponseCode") or "200_OK",
+            failure_cause=(e.payload or {}).get("failureCause"),
+            payload=e.payload,
+        )
+        for e in db_events
+    ]
+    return success_response(events, request=request, data_source="DATABASE", freshness=DataFreshness.LIVE)
+
+
+@router.get("/orders/{order_id}/events", response_model=ApiResponse[List[OrderEventRecord]])
+async def get_order_events(
+    request: Request,
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ApiResponse[List[OrderEventRecord]]:
+    """Retrieve full lifecycle history for a specific order."""
+    stmt = select(OrderEventModel).where(OrderEventModel.order_id == order_id).order_by(OrderEventModel.timestamp.asc())
+    db_events = (await db.execute(stmt)).scalars().all()
+    events = [
+        OrderEventRecord(
+            id=e.id,
+            order_id=e.order_id,
+            event_type=e.event_type,
+            timestamp=e.timestamp.isoformat(),
+            user_id=(e.payload or {}).get("userId") or user.id,
+            tenant_id=(e.payload or {}).get("tenantId") or user.id,
+            broker_order_id=(e.payload or {}).get("brokerOrderId"),
+            requested_quantity=(e.payload or {}).get("requestedQuantity"),
+            filled_quantity=(e.payload or {}).get("filledQuantity"),
+            raw_broker_response_code=(e.payload or {}).get("rawBrokerResponseCode") or "200_OK",
+            failure_cause=(e.payload or {}).get("failureCause"),
+            payload=e.payload,
+        )
+        for e in db_events
+    ]
+    return success_response(events, request=request, data_source="DATABASE", freshness=DataFreshness.LIVE)
 
 
 @router.post("/orders/{order_id}/cancel", response_model=ApiResponse[OrderCancelResult])

@@ -61,6 +61,7 @@ import {
   type AuthCallbackRequest,
   type ConnectBrokerRequest,
   type IpCheckResponse,
+  type OrderEventRecord,
 } from '@autotrader/api-contracts';
 
 // Query keys
@@ -79,6 +80,7 @@ export const queryKeys = {
   feeSchedules: ['feeSchedules'] as const,
   positions: ['positions'] as const,
   orders: ['orders'] as const,
+  orderTimeline: ['orderTimeline'] as const,
   trades: ['trades'] as const,
   tradeCycles: (page: number, pageSize: number, filters?: Partial<TradeCycleFilterParams>) =>
     ['tradeCycles', page, pageSize, filters] as const,
@@ -196,6 +198,22 @@ export function useTrades(connectionId?: string | null, refetchInterval: number 
     queryFn: async () => {
       const url = connectionId ? `${API_ROUTES.trades}?connection_id=${connectionId}` : API_ROUTES.trades;
       const res = await api.get<Trade[]>(url);
+      return res.data;
+    },
+    refetchInterval,
+    retry: 1,
+  });
+}
+
+// 7b. Order Timeline Audit Events (Phase 6)
+export function useOrderTimeline(orderId?: string | null, refetchInterval: number | false = 3000) {
+  return useQuery({
+    queryKey: orderId ? [...queryKeys.orderTimeline, orderId] : queryKeys.orderTimeline,
+    queryFn: async () => {
+      const url = orderId
+        ? `${API_ROUTES.ordersTimeline}?orderId=${orderId}`
+        : API_ROUTES.ordersTimeline;
+      const res = await api.get<OrderEventRecord[]>(url);
       return res.data;
     },
     refetchInterval,

@@ -25,6 +25,8 @@ class OrderSubmissionRequest(CamelModel):
     trading_mode: TradingMode = TradingMode.PAPER
     idempotency_key: Optional[str] = None
     strategy_run_id: Optional[str] = None
+    connection_id: Optional[str] = None
+    broker_id: Optional[str] = None
 
 
 class OrderSubmissionResult(CamelModel):
@@ -40,6 +42,21 @@ class OrderSubmissionResult(CamelModel):
     average_filled_price: Optional[str] = None
     placed_at: str
     message: str
+
+
+class OrderEventRecord(CamelModel):
+    id: str
+    order_id: str
+    event_type: str
+    timestamp: str
+    user_id: Optional[str] = None
+    tenant_id: Optional[str] = None
+    broker_order_id: Optional[str] = None
+    requested_quantity: Optional[int] = None
+    filled_quantity: Optional[int] = None
+    raw_broker_response_code: Optional[str] = None
+    failure_cause: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
 
 
 class OrderCancelRequest(CamelModel):

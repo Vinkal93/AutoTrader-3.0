@@ -15,9 +15,11 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.broker.base import BrokerAdapter
-from app.broker.factory import get_broker_adapter
+from app.broker.factory import get_broker_adapter, get_broker_adapter_for_connection
 from app.models.entities import (
+    BrokerConnection,
     BrokerConnectionStatus,
+    BrokerPermission,
     ChargeEntry,
     Execution as ExecutionModel,
     ExecutionIntent,
@@ -88,6 +90,8 @@ LIVE_AUTHORIZATION_REGISTRY: Dict[str, Any] = {
 
 # Distributed execution lock to prevent duplicate concurrent submissions
 EXECUTION_MUTEX = asyncio.Lock()
+ACCOUNT_EXECUTION_QUEUES: Dict[str, asyncio.Lock] = {}
+BROKER_RATE_LIMIT_TIMESTAMPS: Dict[str, List[float]] = {}
 
 
 def round_tick(price: Decimal) -> Decimal:
@@ -137,6 +141,33 @@ class ExecutionEngine:
 
     def __init__(self, broker: Optional[BrokerAdapter] = None):
         self.broker = broker or get_broker_adapter()
+
+    @classmethod
+    def get_account_lock(cls, account_key: str) -> asyncio.Lock:
+        """Returns or creates a per-account serialization lock for strict FIFO execution ordering."""
+        if account_key not in ACCOUNT_EXECUTION_QUEUES:
+            ACCOUNT_EXECUTION_QUEUES[account_key] = asyncio.Lock()
+        return ACCOUNT_EXECUTION_QUEUES[account_key]
+
+    @classmethod
+    async def throttle_broker_rate_limit(cls, broker_provider: str, limit_per_sec: int = 10) -> None:
+        """Ensures compliance with per-broker upstream API rate limits."""
+        key = broker_provider.upper()
+        now = asyncio.get_event_loop().time()
+        if key not in BROKER_RATE_LIMIT_TIMESTAMPS:
+            BROKER_RATE_LIMIT_TIMESTAMPS[key] = []
+
+        # Keep timestamps within 1.0s window
+        BROKER_RATE_LIMIT_TIMESTAMPS[key] = [t for t in BROKER_RATE_LIMIT_TIMESTAMPS[key] if now - t < 1.0]
+
+        if len(BROKER_RATE_LIMIT_TIMESTAMPS[key]) >= limit_per_sec:
+            oldest = BROKER_RATE_LIMIT_TIMESTAMPS[key][0]
+            sleep_duration = max(0.02, 1.05 - (now - oldest))
+            await asyncio.sleep(sleep_duration)
+            now = asyncio.get_event_loop().time()
+            BROKER_RATE_LIMIT_TIMESTAMPS[key] = [t for t in BROKER_RATE_LIMIT_TIMESTAMPS[key] if now - t < 1.0]
+
+        BROKER_RATE_LIMIT_TIMESTAMPS[key].append(now)
 
     # ---------------------------------------------------------
     # 1. LIVE Trading Authorization Gate
@@ -203,11 +234,41 @@ class ExecutionEngine:
         self,
         request: OrderSubmissionRequest,
         db: AsyncSession,
+        user_id: Optional[str] = None,
     ) -> Decimal:
         """
         Validates tick size, lot size, market hours, daily loss limit,
         funds, and prevents unintended short positions.
         """
+        # 0. Multi-tenant connection ownership & permission validation (Rule 8, 9, 10)
+        if request.connection_id:
+            conn_stmt = select(BrokerConnection).where(BrokerConnection.id == request.connection_id)
+            conn = (await db.execute(conn_stmt)).scalars().first()
+            if conn:
+                if user_id and conn.user_id != user_id:
+                    raise PreFlightRiskError(
+                        f"Cross-tenant access violation: Connection {request.connection_id} belongs to a different account."
+                    )
+                if request.trading_mode == TradingMode.LIVE and conn.state != BrokerConnectionState.CONNECTED.value:
+                    raise PreFlightRiskError(f"Broker connection ({conn.provider_id}) is not active or connected.")
+                perm_stmt = select(BrokerPermission).where(BrokerPermission.connection_id == conn.id)
+                perm = (await db.execute(perm_stmt)).scalars().first()
+                if perm and not perm.can_execute_orders:
+                    raise PreFlightRiskError("Order execution is disabled for this broker connection in permission settings.")
+
+        # Broker Capability & Order Type Verification (Task 2)
+        if request.order_type == OrderType.MARKET and request.exchange == Exchange.NFO:
+            raise PreFlightRiskError(
+                "Market orders on NFO index options are restricted by broker/exchange policy. "
+                "Limit or Stop-Loss Limit (SL-L) orders are mandatory."
+            )
+
+        MAX_ALLOWED_QUANTITY = 250  # 10 lots max per order for safety
+        if request.quantity > MAX_ALLOWED_QUANTITY:
+            raise PreFlightRiskError(
+                f"Order quantity {request.quantity} exceeds maximum allowed safety limit of {MAX_ALLOWED_QUANTITY} units (10 lots)."
+            )
+
         # 1. Market hours check (Allow simulation bypass in PAPER mode for test harnesses)
         if request.trading_mode == TradingMode.LIVE:
             if not is_market_open():
@@ -301,11 +362,16 @@ class ExecutionEngine:
         self,
         request: OrderSubmissionRequest,
         db: AsyncSession,
+        user_id: Optional[str] = None,
     ) -> OrderSubmissionResult:
         """
         Submits an order through the 13-state lifecycle with transactional DB locking.
+        Enforces per-account queue serialization and per-broker rate limiting.
         """
-        async with EXECUTION_MUTEX:
+        account_key = request.connection_id or user_id or "default"
+        account_lock = self.get_account_lock(account_key)
+
+        async with account_lock:
             now_utc = datetime.now(timezone.utc)
             order_id = str(uuid.uuid4())
             idempotency_key = request.idempotency_key or f"IDEMP_{uuid.uuid4().hex[:12].upper()}"
@@ -334,6 +400,8 @@ class ExecutionEngine:
             current_lifecycle = OrderLifecycleState.CREATED
             order_record = OrderModel(
                 id=order_id,
+                user_id=user_id,
+                broker_connection_id=request.connection_id,
                 idempotency_key=idempotency_key,
                 trading_symbol=request.trading_symbol,
                 exchange=request.exchange.value,
@@ -357,20 +425,34 @@ class ExecutionEngine:
                     order_id, current_lifecycle, OrderLifecycleState.VALIDATING, "Beginning pre-flight checks"
                 )
                 current_lifecycle = OrderLifecycleState.VALIDATING
-                self._record_order_event(db, order_id, "VALIDATING", "Pre-flight checks started")
+                self._record_order_event(
+                    db,
+                    order_id,
+                    "VALIDATING",
+                    "Pre-flight checks started",
+                    user_id=user_id,
+                    requested_quantity=request.quantity,
+                )
 
                 # Verify Safety Lock for LIVE
                 await self.verify_live_safety_lock(request.trading_mode, db)
 
                 # Pre-flight risk check
-                price_dec = await self.validate_pre_flight(request, db)
+                price_dec = await self.validate_pre_flight(request, db, user_id=user_id)
 
                 # Transition to AWAITING_SUBMISSION
                 OrderStateMachine.validate_transition(
                     order_id, current_lifecycle, OrderLifecycleState.AWAITING_SUBMISSION, "Pre-flight checks passed"
                 )
                 current_lifecycle = OrderLifecycleState.AWAITING_SUBMISSION
-                self._record_order_event(db, order_id, "AWAITING_SUBMISSION", "Order cleared for dispatch")
+                self._record_order_event(
+                    db,
+                    order_id,
+                    "AWAITING_SUBMISSION",
+                    "Order cleared for dispatch",
+                    user_id=user_id,
+                    requested_quantity=request.quantity,
+                )
 
             except (PreFlightRiskError, SafetyLockViolation) as risk_err:
                 # Transition to REJECTED
@@ -379,7 +461,16 @@ class ExecutionEngine:
                 )
                 order_record.status = OrderStatus.REJECTED.value
                 order_record.status_message = str(risk_err)
-                self._record_order_event(db, order_id, "REJECTED", str(risk_err))
+                self._record_order_event(
+                    db,
+                    order_id,
+                    "REJECTED",
+                    str(risk_err),
+                    user_id=user_id,
+                    requested_quantity=request.quantity,
+                    raw_broker_response_code="PREFLIGHT_REJECT",
+                    failure_cause=str(risk_err),
+                )
                 await db.commit()
 
                 return OrderSubmissionResult(
@@ -402,7 +493,23 @@ class ExecutionEngine:
                 order_id, current_lifecycle, OrderLifecycleState.SUBMITTING, "Dispatching order to broker"
             )
             current_lifecycle = OrderLifecycleState.SUBMITTING
-            self._record_order_event(db, order_id, "SUBMITTING", f"Dispatching in {request.trading_mode.value} mode")
+            self._record_order_event(
+                db,
+                order_id,
+                "SUBMITTING",
+                f"Dispatching in {request.trading_mode.value} mode",
+                user_id=user_id,
+                requested_quantity=request.quantity,
+            )
+
+            # Concurrency Rate Limiter Check
+            broker_provider = request.broker_id or "KOTAK_NEO"
+            if request.connection_id:
+                c_stmt = select(BrokerConnection).where(BrokerConnection.id == request.connection_id)
+                conn_ent = (await db.execute(c_stmt)).scalars().first()
+                if conn_ent:
+                    broker_provider = conn_ent.provider_id
+            await self.throttle_broker_rate_limit(broker_provider, limit_per_sec=5 if broker_provider == "KOTAK_NEO" else 10)
 
             broker_order_id: Optional[str] = None
             avg_fill_price: Optional[Decimal] = None
@@ -423,7 +530,16 @@ class ExecutionEngine:
                     order_id, current_lifecycle, OrderLifecycleState.ACKNOWLEDGED, "Simulated broker ACK"
                 )
                 current_lifecycle = OrderLifecycleState.ACKNOWLEDGED
-                self._record_order_event(db, order_id, "ACKNOWLEDGED", "Paper broker acknowledged order")
+                self._record_order_event(
+                    db,
+                    order_id,
+                    "ACKNOWLEDGED",
+                    "Paper broker acknowledged order",
+                    user_id=user_id,
+                    broker_order_id=broker_order_id,
+                    requested_quantity=request.quantity,
+                    raw_broker_response_code="200_SIM_ACK",
+                )
 
                 OrderStateMachine.validate_transition(
                     order_id, current_lifecycle, OrderLifecycleState.FILLED, "Simulated complete fill"
@@ -436,6 +552,11 @@ class ExecutionEngine:
                     "FILLED",
                     f"Filled {filled_qty} units @ ₹{avg_fill_price:.2f}",
                     {"brokerTradeId": f"TRD_{uuid.uuid4().hex[:8]}"},
+                    user_id=user_id,
+                    broker_order_id=broker_order_id,
+                    requested_quantity=request.quantity,
+                    filled_quantity=filled_qty,
+                    raw_broker_response_code="200_SIM_FILLED",
                 )
 
                 # Record Execution
@@ -453,9 +574,16 @@ class ExecutionEngine:
                 db.add(exec_record)
 
             else:
-                # LIVE Dispatch via KotakNeoAdapter
+                # LIVE Dispatch via selected broker adapter
                 try:
-                    resp = await self.broker.place_order(
+                    adapter = self.broker
+                    if request.connection_id:
+                        conn_stmt = select(BrokerConnection).where(BrokerConnection.id == request.connection_id)
+                        conn_inst = (await db.execute(conn_stmt)).scalars().first()
+                        if conn_inst:
+                            adapter = get_broker_adapter_for_connection(conn_inst)
+
+                    resp = await adapter.place_order(
                         trading_symbol=request.trading_symbol,
                         exchange=request.exchange.value,
                         side=request.side.value,
@@ -475,7 +603,16 @@ class ExecutionEngine:
                     )
                     current_lifecycle = OrderLifecycleState.ACKNOWLEDGED
                     order_record.status = OrderStatus.OPEN.value
-                    self._record_order_event(db, order_id, "ACKNOWLEDGED", f"Broker Order ID: {broker_order_id}")
+                    self._record_order_event(
+                        db,
+                        order_id,
+                        "ACKNOWLEDGED",
+                        f"Broker Order ID: {broker_order_id}",
+                        user_id=user_id,
+                        broker_order_id=broker_order_id,
+                        requested_quantity=request.quantity,
+                        raw_broker_response_code="200_BROKER_ACK",
+                    )
 
                 except Exception as exc:
                     # Network timeout / HTTP failure -> UNKNOWN (Do not blind retry!)
@@ -486,7 +623,16 @@ class ExecutionEngine:
                     current_lifecycle = OrderLifecycleState.UNKNOWN
                     order_record.status = OrderStatus.ERROR.value
                     order_record.status_message = f"Submission uncertainty: {exc}"
-                    self._record_order_event(db, order_id, "UNKNOWN", str(exc))
+                    self._record_order_event(
+                        db,
+                        order_id,
+                        "UNKNOWN",
+                        str(exc),
+                        user_id=user_id,
+                        requested_quantity=request.quantity,
+                        raw_broker_response_code="NET_UNCERTAIN",
+                        failure_cause=str(exc),
+                    )
 
                     # Trip engine into RECONCILING
                     await self._record_system_event(
@@ -1081,13 +1227,30 @@ class ExecutionEngine:
         event_type: str,
         reason: str,
         payload: Optional[Dict[str, Any]] = None,
+        user_id: Optional[str] = None,
+        broker_order_id: Optional[str] = None,
+        requested_quantity: Optional[int] = None,
+        filled_quantity: Optional[int] = None,
+        raw_broker_response_code: Optional[str] = None,
+        failure_cause: Optional[str] = None,
     ) -> None:
-        """Appends audit event to order_events table."""
+        """Appends audit event to order_events table with full Task 6 timeline attributes."""
+        event_payload = {
+            **(payload or {}),
+            "reason": reason,
+            "userId": user_id,
+            "tenantId": user_id,
+            "brokerOrderId": broker_order_id,
+            "requestedQuantity": requested_quantity,
+            "filledQuantity": filled_quantity,
+            "rawBrokerResponseCode": raw_broker_response_code or ("SIM_OK" if not failure_cause else "ERR"),
+            "failureCause": failure_cause,
+        }
         event = OrderEvent(
             id=str(uuid.uuid4()),
             order_id=order_id,
             event_type=event_type,
-            payload={**(payload or {}), "reason": reason},
+            payload=event_payload,
             timestamp=datetime.now(timezone.utc),
         )
         db.add(event)

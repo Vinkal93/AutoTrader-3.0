@@ -17,19 +17,19 @@ export default function LiveTradingTerminalPage() {
       {/* Page Header */}
       <PageHeader
         title="Live Trading Terminal"
-        subtitle="Real-time market depth, smart premium scanner, canonical trend analysis, and safely gated trade controls"
+        subtitle="Multi-broker execution cockpit: Real-time option depth, canonical trend analysis, margin preview, and gated order routing"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/' },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Live Trading Terminal' },
         ]}
       />
 
-      {/* Terminal Top Control Bar */}
+      {/* Terminal Top Control Bar: Account Context, NIFTY Quote, Mode Switcher, Emergency Halt */}
       <TerminalHeader />
 
-      {/* Main Terminal Grid: Left (Chart) | Center (Scanner & Option Chain) | Right (Trade Ticket) */}
+      {/* Main Terminal Grid: Left (Chart & Scanner) | Center (Option Chain Depth) | Right (Trade Ticket) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* Left Column: Interactive Candlestick Chart with Canonical Trend */}
+        {/* Left Column: Interactive Candlestick Chart with Canonical Trend & Premium Scanner */}
         <div className="lg:col-span-12 xl:col-span-5 space-y-4">
           <TerminalChart />
           <SmartPremiumScannerCard
@@ -37,7 +37,7 @@ export default function LiveTradingTerminalPage() {
           />
         </div>
 
-        {/* Center Column: Option Chain Depth */}
+        {/* Center Column: Option Chain Depth with Strike Search & Greeks */}
         <div className="lg:col-span-7 xl:col-span-4 space-y-4">
           <OptionChainTable
             selectedToken={selectedContract?.instrumentToken}
@@ -45,13 +45,13 @@ export default function LiveTradingTerminalPage() {
           />
         </div>
 
-        {/* Right Column: Trade Ticket with Pre-flight Fee Validation */}
+        {/* Right Column: Multi-Broker Trade Ticket with Margin Preview & Fee Breakdown */}
         <div className="lg:col-span-5 xl:col-span-3">
           <TradeTicket selectedContract={selectedContract} />
         </div>
       </div>
 
-      {/* Bottom Area: Tabbed Positions, Orders, Tradebook, Lifecycle State Machine, and System Alerts */}
+      {/* Bottom Area: Tabbed Positions, Orders, Executions, Order Event Timeline, Lifecycle State Machine */}
       <TerminalBottomTabs />
     </div>
   );
