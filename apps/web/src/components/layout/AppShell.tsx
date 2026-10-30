@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
@@ -10,7 +10,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useBrokerConnection, useHealth } from '@/hooks/use-queries';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { BrokerConnectionState } from '@autotrader/api-contracts';
-import { ShieldCheck, ShieldAlert, Clock, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Clock } from 'lucide-react';
 import { formatISTDateTime } from '@/lib/formatters';
 import { useAuth } from '@/lib/auth/auth-context';
 
@@ -25,6 +25,20 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const { sidebarCollapsed, confirmDialog, closeConfirmDialog } = useUIStore();
   const { data: broker } = useBrokerConnection();
   const { data: health } = useHealth();
+
+  // Clock hydration fix: Real-time ticking client clock without server mismatch
+  const [mounted, setMounted] = useState(false);
+  const [currentTime, setCurrentTime] = useState<string>('');
+
+  useEffect(() => {
+    setMounted(true);
+    const updateTime = () => {
+      setCurrentTime(formatISTDateTime(new Date().toISOString(), { timeOnly: true }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isPublicRoute =
     pathname === '/' ||
@@ -60,62 +74,58 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       if (!user.isOnboarded) {
         router.push('/onboarding');
       } else {
-        const params = new URLSearchParams(window.location.search);
-        const safeRedirect = params.get('redirect');
-        if (safeRedirect && safeRedirect.startsWith('/') && !safeRedirect.startsWith('//')) {
-          router.push(safeRedirect);
-        } else {
-          router.push('/dashboard');
-        }
+        router.push('/dashboard');
       }
       return;
     }
 
-    // 2. If user is authenticated and not onboarded, redirect from private routes to /onboarding
-    if (user && !user.isOnboarded && !isPublicRoute && !isOnboardingRoute) {
+    // 2. If user is authenticated and has not onboarded, restrict access to private pages
+    if (user && !user.isOnboarded && !isOnboardingRoute && !isPublicRoute) {
       router.push('/onboarding');
       return;
     }
 
-    // 3. If user is onboarded and tries to access /onboarding, redirect to /dashboard
-    if (user && user.isOnboarded && isOnboardingRoute) {
-      router.push('/dashboard');
-      return;
+    // 3. If user is unauthenticated and visits private app route, redirect to login
+    if (!user && !isPublicRoute && !isOnboardingRoute) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [user, authLoading, pathname, isPublicRoute, isOnboardingRoute, router]);
 
-  if (isPublicRoute || isOnboardingRoute) {
+  // Public marketing & legal layout (No sidebar or dashboard topbar)
+  if (isPublicRoute) {
     return (
-      <div className="min-h-screen bg-white flex flex-col font-sans text-neutral-900 antialiased selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
+      <div className="min-h-screen bg-white text-neutral-900 font-sans">
         {children}
-        {confirmDialog && (
-          <ConfirmDialog
-            isOpen={confirmDialog.isOpen}
-            title={confirmDialog.title}
-            description={confirmDialog.description}
-            confirmText={confirmDialog.confirmText}
-            cancelText={confirmDialog.cancelText}
-            variant={confirmDialog.variant}
-            onConfirm={() => {
-              confirmDialog.onConfirm?.();
-              closeConfirmDialog();
-            }}
-            onClose={() => {
-              confirmDialog.onCancel?.();
-              closeConfirmDialog();
-            }}
-          />
-        )}
       </div>
     );
   }
 
-  const brokerState = broker?.state ?? BrokerConnectionState.NOT_CONFIGURED;
-  const isHealthy = health?.status === 'healthy';
+  // Onboarding full-screen standalone layout
+  if (isOnboardingRoute) {
+    return (
+      <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans">
+        {children}
+      </div>
+    );
+  }
+
+  // Broker connection state mapping
+  const brokerState =
+    {
+      [BrokerConnectionState.CONNECTED]: 'connected' as const,
+      [BrokerConnectionState.NOT_CONFIGURED]: 'disconnected' as const,
+      [BrokerConnectionState.AUTHENTICATION_EXPIRED]: 'stale' as const,
+      [BrokerConnectionState.DISCONNECTED]: 'disconnected' as const,
+      [BrokerConnectionState.ERROR]: 'error' as const,
+      [BrokerConnectionState.RATE_LIMITED]: 'stale' as const,
+      [BrokerConnectionState.RECONNECTING]: 'connecting' as const,
+    }[broker?.state ?? BrokerConnectionState.NOT_CONFIGURED] || 'disconnected';
+
+  const isHealthy = health?.status === 'HEALTHY';
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col font-sans text-neutral-900 antialiased selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-neutral-50 flex font-sans selection:bg-blue-100 selection:text-blue-900 antialiased">
+      {/* Sidebar Navigation */}
       <Sidebar />
 
       {/* Main Content Area */}
@@ -162,7 +172,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-center sm:justify-end">
               <div className="flex items-center gap-1 text-neutral-400 tabular-nums">
                 <Clock className="w-3.5 h-3.5" />
-                <span>{formatISTDateTime(new Date().toISOString(), { timeOnly: true })}</span>
+                <span suppressHydrationWarning>
+                  {mounted && currentTime ? currentTime : '--:--:--'}
+                </span>
               </div>
               <span className="hidden sm:inline text-neutral-300">|</span>
               <span className="text-[11px] font-medium text-neutral-600 flex items-center gap-1">
