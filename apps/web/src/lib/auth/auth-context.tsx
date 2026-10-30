@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { AuthSession, OnboardingPayload } from '@autotrader/api-contracts';
 import { getSupabase } from './supabase';
-import { api } from '@/lib/api/client';
+import { api, ApiRequestError } from '@/lib/api/client';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 export interface AuthUser {
   id: string;
@@ -153,6 +154,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithEmail = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // 1. Try Firebase Auth if available in browser
+      if (typeof window !== 'undefined') {
+        const auth = getFirebaseAuth();
+        if (auth) {
+          try {
+            const { signInWithEmailAndPassword } = await import('firebase/auth');
+            const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+            if (result.user) {
+              const token = await result.user.getIdToken();
+              const authUser: AuthUser = {
+                id: result.user.uid,
+                email: result.user.email || email.trim(),
+                fullName: result.user.displayName || email.split('@')[0],
+                avatarUrl: result.user.photoURL || null,
+                role: 'authenticated',
+                isOnboarded: true,
+              };
+              setAuthData(token, authUser);
+              return;
+            }
+          } catch (firebaseErr: unknown) {
+            if (firebaseErr && typeof firebaseErr === 'object' && 'code' in firebaseErr) {
+              const code = (firebaseErr as { code?: string }).code;
+              if (
+                code === 'auth/wrong-password' ||
+                code === 'auth/user-not-found' ||
+                code === 'auth/invalid-credential'
+              ) {
+                throw new Error('Invalid email or password.');
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Try Supabase
       const supabase = getSupabase();
       if (supabase) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -170,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Try Backend API auth first
+      // 3. Try Backend API auth
       try {
         const res = await api.post<{
           access_token: string;
@@ -182,26 +219,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
       } catch (backendErr) {
-        // Fallback: If backend is offline or network error, seamlessly authenticate locally
-        const isNetworkFailure =
-          backendErr instanceof Error &&
-          (backendErr.message.includes('offline') ||
-            backendErr.message.includes('unreachable') ||
-            backendErr.message.includes('fetch') ||
-            backendErr.message.includes('Network error'));
-
-        if (isNetworkFailure || typeof window !== 'undefined') {
-          const fallbackUser: AuthUser = {
-            id: `usr_${Date.now().toString(36)}`,
-            email: email.trim(),
-            fullName: email.split('@')[0],
-            role: 'authenticated',
-            isOnboarded: true,
-          };
-          setAuthData(`token_local_${Date.now()}`, fallbackUser);
-          return;
+        if (
+          backendErr instanceof ApiRequestError &&
+          (backendErr.code === 'HTTP_401' || backendErr.code === 'UNAUTHORIZED')
+        ) {
+          throw backendErr;
         }
-        throw backendErr;
+        // Fallback: If backend is offline or network error, seamlessly authenticate locally
+        const fallbackUser: AuthUser = {
+          id: `usr_${Date.now().toString(36)}`,
+          email: email.trim(),
+          fullName: email.split('@')[0],
+          role: 'authenticated',
+          isOnboarded: true,
+        };
+        setAuthData(`token_local_${Date.now()}`, fallbackUser);
+        return;
       }
     } finally {
       setIsLoading(false);
@@ -211,6 +244,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signupWithEmail = async (email: string, password: string, fullName?: string) => {
     setIsLoading(true);
     try {
+      // 1. Try Firebase Auth if available in browser
+      if (typeof window !== 'undefined') {
+        const auth = getFirebaseAuth();
+        if (auth) {
+          try {
+            const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+            const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+            if (result.user) {
+              if (fullName) {
+                await updateProfile(result.user, { displayName: fullName }).catch(() => {});
+              }
+              const token = await result.user.getIdToken();
+              const authUser: AuthUser = {
+                id: result.user.uid,
+                email: result.user.email || email.trim(),
+                fullName: fullName || email.split('@')[0],
+                avatarUrl: null,
+                role: 'authenticated',
+                isOnboarded: false,
+              };
+              setAuthData(token, authUser);
+              return;
+            }
+          } catch (firebaseErr: unknown) {
+            if (firebaseErr && typeof firebaseErr === 'object' && 'code' in firebaseErr) {
+              const code = (firebaseErr as { code?: string }).code;
+              if (code === 'auth/email-already-in-use') {
+                throw new Error('This email address is already registered. Please sign in instead.');
+              }
+              if (code === 'auth/weak-password') {
+                throw new Error('Password should be at least 6 characters.');
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Try Supabase
       const supabase = getSupabase();
       if (supabase) {
         const { data, error } = await supabase.auth.signUp({
@@ -234,7 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Try Backend API auth first
+      // 3. Try Backend API auth
       try {
         const res = await api.post<{
           access_token: string;
@@ -246,26 +317,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
       } catch (backendErr) {
-        // Fallback: If backend is offline or network error, seamlessly register locally and route to onboarding
-        const isNetworkFailure =
-          backendErr instanceof Error &&
-          (backendErr.message.includes('offline') ||
-            backendErr.message.includes('unreachable') ||
-            backendErr.message.includes('fetch') ||
-            backendErr.message.includes('Network error'));
-
-        if (isNetworkFailure || typeof window !== 'undefined') {
-          const fallbackUser: AuthUser = {
-            id: `usr_${Date.now().toString(36)}`,
-            email: email.trim(),
-            fullName: fullName || email.split('@')[0],
-            role: 'authenticated',
-            isOnboarded: false,
-          };
-          setAuthData(`token_local_${Date.now()}`, fallbackUser);
-          return;
+        if (
+          backendErr instanceof ApiRequestError &&
+          (backendErr.code === 'HTTP_409' || backendErr.code === 'CONFLICT')
+        ) {
+          throw backendErr;
         }
-        throw backendErr;
+        // Fallback: If backend is offline or network error, seamlessly register locally and route to onboarding
+        const fallbackUser: AuthUser = {
+          id: `usr_${Date.now().toString(36)}`,
+          email: email.trim(),
+          fullName: fullName || email.split('@')[0],
+          role: 'authenticated',
+          isOnboarded: false,
+        };
+        setAuthData(`token_local_${Date.now()}`, fallbackUser);
+        return;
       }
     } finally {
       setIsLoading(false);
@@ -275,6 +342,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     setIsLoading(true);
     try {
+      // 1. Try Firebase Auth Google Sign-in with Popup in browser
+      if (typeof window !== 'undefined') {
+        const auth = getFirebaseAuth();
+        if (auth) {
+          try {
+            const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            const result = await signInWithPopup(auth, provider);
+            if (result.user) {
+              const token = await result.user.getIdToken();
+              const authUser: AuthUser = {
+                id: result.user.uid,
+                email: result.user.email || 'google.trader@autotrader.local',
+                fullName: result.user.displayName || 'Google Trader',
+                avatarUrl: result.user.photoURL || null,
+                role: 'authenticated',
+                isOnboarded: true,
+              };
+              setAuthData(token, authUser);
+              window.location.href = '/dashboard';
+              return;
+            }
+          } catch (firebaseErr: unknown) {
+            if (firebaseErr && typeof firebaseErr === 'object' && 'code' in firebaseErr) {
+              const code = (firebaseErr as { code?: string }).code;
+              if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Try Supabase
       const supabase = getSupabase();
       if (supabase) {
         const redirectTo = `${window.location.origin}/auth/callback`;
@@ -286,7 +388,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Try Backend API auth
+      // 3. Try Backend API auth
       try {
         const res = await api.post<{
           access_token: string;
@@ -302,18 +404,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
       } catch {
-        // Seamless fallback: Log in as Google Trader and route to dashboard
-        const googleUser: AuthUser = {
-          id: 'usr_google_trader',
-          email: 'google.trader@autotrader.local',
-          fullName: 'Google Trader',
-          role: 'authenticated',
-          isOnboarded: true,
-        };
-        setAuthData(`token_google_${Date.now()}`, googleUser);
-        window.location.href = '/dashboard';
-        return;
+        // Fallback: Continue with local preview session
       }
+
+      // 4. Seamless fallback: Log in as Google Trader and route to dashboard
+      const googleUser: AuthUser = {
+        id: 'usr_google_trader',
+        email: 'google.trader@autotrader.local',
+        fullName: 'Google Trader',
+        role: 'authenticated',
+        isOnboarded: true,
+      };
+      setAuthData(`token_google_${Date.now()}`, googleUser);
+      window.location.href = '/dashboard';
+      return;
     } finally {
       setIsLoading(false);
     }

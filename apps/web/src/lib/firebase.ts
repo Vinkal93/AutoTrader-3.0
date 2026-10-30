@@ -9,6 +9,7 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import { getAnalytics, isSupported, type Analytics, logEvent } from 'firebase/analytics';
+import { getAuth, type Auth } from 'firebase/auth';
 
 export const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyCXKHVzl1qGTdTD_as5pcARQT2f03Od-do',
@@ -85,3 +86,27 @@ export async function logFirebaseEvent(
 }
 
 export const firebaseApp: FirebaseApp = getFirebaseApp();
+
+let authInstance: Auth | null = null;
+
+/**
+ * Returns the Firebase Auth instance safely in browser environment.
+ */
+export function getFirebaseAuth(): Auth | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  if (authInstance) {
+    return authInstance;
+  }
+  try {
+    const app = getFirebaseApp();
+    authInstance = getAuth(app);
+    return authInstance;
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Firebase] Auth initialization error:', error);
+    }
+    return null;
+  }
+}

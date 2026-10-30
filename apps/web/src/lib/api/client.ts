@@ -55,15 +55,27 @@ export async function apiClient<T>(
       headers,
     });
 
-    const data: ApiResponse<T> = await response.json();
+    let data: ApiResponse<T> | null = null;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        data = (await response.json()) as ApiResponse<T>;
+      } catch {
+        data = null;
+      }
+    }
 
-    if (!response.ok || !data.success) {
-      const errorMsg = data.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      const errorCode = data.error?.code || `HTTP_${response.status}`;
+    if (!response.ok || !data?.success) {
+      const errorMsg =
+        data?.error?.message ||
+        (response.status >= 500
+          ? 'Trading backend service is currently offline or unreachable.'
+          : `HTTP ${response.status}: ${response.statusText}`);
+      const errorCode = data?.error?.code || `HTTP_${response.status}`;
       throw new ApiRequestError({
         code: errorCode,
         message: errorMsg,
-        details: data.error?.details,
+        details: data?.error?.details,
       });
     }
 
@@ -73,16 +85,18 @@ export async function apiClient<T>(
       throw err;
     }
 
-    // Network / connection refused failures
+    // Network / connection refused / JSON parse failures
     const isNetworkFailure =
       err instanceof Error &&
       (err.message.includes('fetch') ||
         err.message.includes('NetworkError') ||
         err.message.includes('Failed to fetch') ||
-        err.message.includes('ECONNREFUSED'));
+        err.message.includes('ECONNREFUSED') ||
+        err.message.includes('JSON') ||
+        err.message.includes('Unexpected token'));
 
     const friendlyMessage = isNetworkFailure
-      ? 'Trading backend service is offline (http://localhost:8000). Please start the backend service or continue in preview mode.'
+      ? 'Trading backend service is offline. Please start the backend service or continue in preview mode.'
       : err instanceof Error
       ? err.message
       : 'Network error or backend unreachable';
