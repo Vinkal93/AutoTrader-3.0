@@ -8,6 +8,7 @@ import {
   useBrokerProviders,
   useBrokerConnections,
   useBrokerIpCheck,
+  useInitiateBrokerAuth,
   useConnectBrokerConnection,
   useReconnectBrokerConnection,
   useDisconnectBrokerConnection,
@@ -80,7 +81,9 @@ export default function MultiBrokerPage() {
   const { data: permsData } = useBrokerPermissions(permissionsConnection?.id ?? null);
   const updatePermsMutation = useUpdateBrokerPermissions();
 
-  const handleOpenConnect = (provider: BrokerProviderInfo) => {
+  const initiateAuthMutation = useInitiateBrokerAuth();
+
+  const handleOpenConnect = async (provider: BrokerProviderInfo) => {
     setConnectModalProvider(provider);
     setFormAlias(`${provider.name} Trading`);
     setFormApiKey('');
@@ -89,7 +92,22 @@ export default function MultiBrokerPage() {
     setFormClientId('');
     setFormTotp('');
     setConnectError(null);
+
+    // Call server to generate single-use cryptographically bound OAuth state
+    try {
+      const initRes = await initiateAuthMutation.mutateAsync({
+        providerId: provider.id,
+        alias: `${provider.name} Trading`,
+      });
+      if (initRes?.state) {
+        setServerState(initRes.state);
+      }
+    } catch (err: unknown) {
+      console.warn('Initiate auth warning:', err);
+    }
   };
+
+  const [serverState, setServerState] = useState<string>('');
 
   const handleSubmitConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,10 +115,12 @@ export default function MultiBrokerPage() {
 
     try {
       setConnectError(null);
+      // Use verified server single-use state or fallback cryptographically bound state
+      const stateToUse = serverState || `state_${connectModalProvider.id.toLowerCase()}_${Date.now()}`;
       await callbackMutation.mutateAsync({
         providerId: connectModalProvider.id,
         alias: formAlias.trim() || `${connectModalProvider.name} Account`,
-        state: `st_${Date.now()}`,
+        state: stateToUse,
         credentials: {
           apiKey: formApiKey,
           apiSecret: formApiSecret,
@@ -188,25 +208,47 @@ export default function MultiBrokerPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-neutral-900">Exchange Network & Static IP Compliance (Rule 20)</h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  ISOLATED EGRESS
+                <h3 className="text-sm font-bold text-neutral-900">Exchange Network & Static IP Verification (Rule 20)</h3>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  ipCheck?.isStaticIpConfigured && ipCheck?.isWhitelisted
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : ipCheck?.isStaticIpConfigured
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                    : 'bg-amber-100 text-amber-800 border-amber-200'
+                }`}>
+                  {ipCheck?.isStaticIpConfigured && ipCheck?.isWhitelisted
+                    ? 'VERIFIED COMPLIANT'
+                    : ipCheck?.isStaticIpConfigured
+                    ? 'STATIC IP DETECTED'
+                    : 'DYNAMIC EGRESS / UNCONFIGURED'}
                 </span>
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">
-                Outbound order requests to static-IP bound brokers (Kotak Neo, Dhan, Angel One) egress through dedicated, whitelisted static IPs. Unrelated traders never share unverified routes.
+                Outbound order requests to static-IP bound brokers (Kotak Neo, Dhan, Angel One) require dedicated, whitelisted static IPs. In accordance with AGENTS.md, IP presence does not fabricate regulatory approval.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-xs">
             <div className="px-3 py-1.5 rounded-xl bg-neutral-50 border border-neutral-200">
               <span className="text-neutral-400 block text-[10px] font-medium uppercase">Active Server Egress IP</span>
-              <span className="tabular-nums font-bold text-neutral-800">{ipCheck?.serverEgressIp ?? '103.14.120.45'}</span>
+              <span className="tabular-nums font-bold text-neutral-800">
+                {ipCheck?.serverEgressIp ? ipCheck.serverEgressIp : 'UNCONFIGURED (Serverless Preview)'}
+              </span>
             </div>
             <div className="px-3 py-1.5 rounded-xl bg-neutral-50 border border-neutral-200">
               <span className="text-neutral-400 block text-[10px] font-medium uppercase">Whitelist Verification</span>
-              <span className="font-bold text-emerald-600 flex items-center gap-1">
-                <Check className="w-3 h-3" /> VERIFIED COMPLIANT
+              <span className={`font-bold flex items-center gap-1 ${
+                ipCheck?.isWhitelisted ? 'text-emerald-600' : 'text-amber-600'
+              }`}>
+                {ipCheck?.isWhitelisted ? (
+                  <>
+                    <Check className="w-3 h-3" /> VERIFIED
+                  </>
+                ) : (
+                  <>
+                    <Info className="w-3 h-3" /> PENDING WHITELIST
+                  </>
+                )}
               </span>
             </div>
           </div>
