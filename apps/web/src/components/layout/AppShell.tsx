@@ -114,14 +114,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     {
       [BrokerConnectionState.CONNECTED]: 'connected' as const,
       [BrokerConnectionState.NOT_CONFIGURED]: 'disconnected' as const,
-      [BrokerConnectionState.AUTHENTICATION_EXPIRED]: 'stale' as const,
       [BrokerConnectionState.DISCONNECTED]: 'disconnected' as const,
+      [BrokerConnectionState.CONNECTING]: 'connecting' as const,
+      [BrokerConnectionState.SESSION_EXPIRED]: 'stale' as const,
       [BrokerConnectionState.ERROR]: 'error' as const,
-      [BrokerConnectionState.RATE_LIMITED]: 'stale' as const,
-      [BrokerConnectionState.RECONNECTING]: 'connecting' as const,
     }[broker?.state ?? BrokerConnectionState.NOT_CONFIGURED] || 'disconnected';
 
-  const isHealthy = health?.status === 'HEALTHY';
+  const isHealthy = health?.status === 'healthy';
 
   return (
     <div className="min-h-screen bg-neutral-50 flex font-sans selection:bg-blue-100 selection:text-blue-900 antialiased">

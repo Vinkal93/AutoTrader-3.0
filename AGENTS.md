@@ -127,3 +127,51 @@ flowchart TD
 
 > [!CAUTION]
 > If an agent encounters a database migration failure, corrupted state, or unknown broker error, it must immediately transition the affected tenant runner into `EngineState.ERROR` or `EngineState.RISK_LOCKED` and log a high-severity `SystemEvent`. Never attempt unsafe automatic recovery that risks financial exposure.
+
+---
+
+## 5. Security & Multi-Broker Integration Requirements
+
+### 5.1 Authentication & Server-Side RBAC
+- **Server Identity Authority**: Client-submitted `tenant_id` or `user_id` is never trusted. Every authenticated request derives ownership strictly from cryptographic session context (Firebase Auth JWT / Supabase JWT verified server-side).
+- **Role Enforcement**: Every backend route must enforce role-based access control (`SUPER_ADMIN`, `USER`, `SUPPORT_READ_ONLY`). The Super Admin portal (`/admin`) and endpoints under `/api/v1/admin/*` require verified `SUPER_ADMIN` privileges.
+
+### 5.2 Broker Credential Envelope Encryption (Rule 18)
+- Broker API secrets, access tokens, and refresh tokens stored in PostgreSQL must be encrypted using **AES-256-GCM envelope encryption** with distinct per-tenant data encryption keys.
+- Broker credentials must never be emitted into client bundles, URLs, error banners, or analytics events. API responses must return masked strings only (e.g. `ak_live_••••••`).
+
+### 5.3 Order Lifecycle & Safety Lock (Rule 21)
+- **Four-Part Live Safety Gate**: Live order execution requires passing all four release gates:
+  1. System-wide release gate passed (platform kill-switch not triggered).
+  2. Tenant account connected and authorized.
+  3. Pre-flight risk checks passed (tick size 0.05, lot size multiples, max daily loss limit).
+  4. Explicit user live execution toggle armed.
+- **Protective Stop-Loss Invariant**: If a protective Stop-Loss Limit (SL-L) order placement fails, the engine must immediately halt further automated entries, log a critical alert, and follow the configured safety recovery policy. Never assume a position is protected.
+- **Timeout Reconciliation**: In the event of a network timeout during order placement, the system must **NEVER blindly retry**. It must query the broker's orderbook by `client_order_id` to reconcile the true state before proceeding.
+
+### 5.4 Testing & Verification Governance
+- Every code change must be accompanied by passing unit tests (`npm run test:web`) and contract verification (`node tests/integration/test_contracts_parity.js`).
+- Never introduce mock financial data in live production paths. Automated unit test fixtures must remain isolated within test files.
+
+---
+
+## 6. Execution Phases & Governance Scorecard
+
+| Phase | Title | Governance & Acceptance Criteria |
+| :--- | :--- | :--- |
+| **Phase 0** | **Full Audit & Baseline** | Complete audit, gap analysis, capabilities matrix, threat model, and AGENTS.md update. |
+| **Phase 1** | **Auth & User Management** | Server-side token validation, RBAC, user profile, risk preferences, tenant isolation. |
+| **Phase 2** | **Canonical Multi-Broker** | Abstract broker adapter contract, 6 broker implementations, normalized data models. |
+| **Phase 3** | **Connection Flow** | Official OAuth 2.0 and TOTP wizards, token encryption, genuine connection states. |
+| **Phase 4** | **Live Dashboard Backend** | Real-time telemetry, cash, margin, positions, orders, P&L, freshness timestamps. |
+| **Phase 5** | **Order Management System** | 13-state machine, pre-flight validation, timeout reconciliation, postbacks. |
+| **Phase 6** | **Risk Management Engine** | Server-side daily loss limit, max position size, SL-L failure recovery, kill-switches. |
+| **Phase 7** | **Automated Strategy Engine**| Multi-tenant leases, Redis locking, IST market hours, paper vs live mode. |
+| **Phase 8** | **Market Data & Contracts** | Daily security master sync, option chain, feed freshness watchdog (<30s). |
+| **Phase 9** | **Trade History & Analytics**| Tradebook reconciliation, gross/net P&L, statutory fee breakdown, CSV export. |
+| **Phase 10**| **Persistent Notifications** | Event bus, in-app notification center, email alerts, deduplication window. |
+| **Phase 11**| **Database & Multi-Tenancy** | Alembic migrations, foreign keys, RLS, cross-tenant penetration tests. |
+| **Phase 12**| **Security Hardening** | AES-256-GCM envelope encryption, SSRF protection, CSRF, cookie security. |
+| **Phase 13**| **Infrastructure & Egress** | Dedicated static egress IP routing, docker compose, deployment runbooks. |
+| **Phase 14**| **Complete Testing Suite** | Unit, contract, integration, and E2E browser test verification. |
+| **Phase 15**| **Final Release & Acceptance**| Feature completion matrix, release scorecard, production sign-off. |
